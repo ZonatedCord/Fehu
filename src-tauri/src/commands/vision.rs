@@ -48,16 +48,66 @@ pub async fn analyze_receipt(image_path: String) -> AppResult<ReceiptData> {
         return Err(AppError::Validation("Nessun testo estratto dall'immagine".into()));
     }
 
-    // Step 2: qwen2.5-coder — estrae struttura dal testo grezzo
+    let mut data = ReceiptData::default();
+
+    // Estrai importo con regex Rust — più affidabile di LLM su pattern numerici
+    // Prova: -9,40€ | -9.40€ | -9 40€ (spazio da OCR) | 9,40 € ecc.
+    let re_amt = regex::Regex::new(r"-?(\d+)[,. ](\d{2})\s*[€$]").ok();
+    if let Some(re) = re_amt {
+        if let Some(cap) = re.captures(&raw_text) {
+            let s = format!("{}.{}", &cap[1], &cap[2]);
+            if let Ok(f) = s.parse::<f64>() { data.importo = Some(f); }
+        }
+    }
+
+    // Estrai data con regex Rust — converte mesi italiani in YYYY-MM-DD
+    let re_date = regex::Regex::new(
+        r"(\d{1,2})\s+(Gen|Feb|Mar|Apr|Mag|Giu|Lug|Ago|Set|Ott|Nov|Dic)\s+(\d{4})"
+    ).ok();
+    if let Some(re) = re_date {
+        if let Some(cap) = re.captures(&raw_text) {
+            let day = format!("{:02}", cap[1].parse::<u32>().unwrap_or(1));
+            let month = match &cap[2] {
+                m if m.eq_ignore_ascii_case("gen") => "01",
+                m if m.eq_ignore_ascii_case("feb") => "02",
+                m if m.eq_ignore_ascii_case("mar") => "03",
+                m if m.eq_ignore_ascii_case("apr") => "04",
+                m if m.eq_ignore_ascii_case("mag") => "05",
+                m if m.eq_ignore_ascii_case("giu") => "06",
+                m if m.eq_ignore_ascii_case("lug") => "07",
+                m if m.eq_ignore_ascii_case("ago") => "08",
+                m if m.eq_ignore_ascii_case("set") => "09",
+                m if m.eq_ignore_ascii_case("ott") => "10",
+                m if m.eq_ignore_ascii_case("nov") => "11",
+                _ => "12",
+            };
+            data.data = Some(format!("{}-{}-{}", &cap[3], month, day));
+        }
+    }
+    // Fallback: data già in formato YYYY-MM-DD o DD/MM/YYYY
+    if data.data.is_none() {
+        if let Some(re) = regex::Regex::new(r"(\d{4})-(\d{2})-(\d{2})").ok() {
+            if let Some(cap) = re.captures(&raw_text) {
+                data.data = Some(format!("{}-{}-{}", &cap[1], &cap[2], &cap[3]));
+            }
+        }
+    }
+    if data.data.is_none() {
+        if let Some(re) = regex::Regex::new(r"(\d{2})/(\d{2})/(\d{4})").ok() {
+            if let Some(cap) = re.captures(&raw_text) {
+                data.data = Some(format!("{}-{}-{}", &cap[3], &cap[2], &cap[1]));
+            }
+        }
+    }
+
+    // Step 2: qwen2.5-coder — solo store e categoria (semantica, non numeri)
     let client = reqwest::Client::new();
     let parse_prompt = format!(
-        "You are a financial document parser for an Italian expense tracker. Extract data from this text and output ONLY these 4 lines:\n\
-AMOUNT: [positive decimal number, e.g. 9.40 — strip minus sign and currency symbols]\n\
-DATE: [YYYY-MM-DD — convert Italian months: Gen=01 Feb=02 Mar=03 Apr=04 Mag=05 Giu=06 Lug=07 Ago=08 Set=09 Ott=10 Nov=11 Dic=12]\n\
-STORE: [merchant or payee name]\n\
-CATEGORY: [pick ONE: Cibo=supermarkets/restaurants/food; Trasporti=fuel/transport/tolls/flights; Casa=utilities/rent/furniture/home; Salute=pharmacy/doctors/medical; Svago=streaming/cinema/games/entertainment; Abbigliamento=clothing/shoes/fashion; Istruzione=courses/books/education; Sport=gym/sports; Lavoro=hosting/software/cloud/professional-services/PayPal-for-services/Cloudflare/AWS/Adobe; Altro=anything-else]\n\n\
-If a value is not found write N/A.\n\n\
-Text:\n{raw_text}"
+        "You are a financial transaction categorizer. From this text extract:\n\
+STORE: [merchant or payee name, one line only]\n\
+CATEGORY: [pick exactly ONE Italian word: Cibo | Trasporti | Casa | Salute | Svago | Abbigliamento | Istruzione | Sport | Lavoro | Altro]\n\n\
+Category guide — Cibo: food/restaurants/supermarkets; Trasporti: fuel/transport/flights; Casa: utilities/rent/furniture; Salute: pharmacy/medical; Svago: Netflix/Spotify/cinema/games; Abbigliamento: clothing/shoes; Istruzione: courses/books; Sport: gym/sports; Lavoro: hosting/software/cloud/Cloudflare/AWS/Adobe/PayPal-business; Altro: everything else.\n\n\
+Output ONLY those 2 lines. No explanation.\n\nText:\n{raw_text}"
     );
 
     let parse_body = serde_json::json!({
@@ -66,56 +116,44 @@ Text:\n{raw_text}"
         "stream": false
     });
 
-    let parse_resp = client
+    if let Ok(resp) = client
         .post("http://localhost:11434/api/generate")
         .json(&parse_body)
         .timeout(std::time::Duration::from_secs(60))
         .send()
         .await
-        .map_err(|e| AppError::Validation(format!("Errore Ollama qwen: {e}")))?;
-
-    let parse_json: serde_json::Value = parse_resp.json().await
-        .map_err(|e| AppError::Validation(format!("Risposta qwen non valida: {e}")))?;
-
-    let text = parse_json["response"].as_str().unwrap_or(&raw_text);
-
-    // Parse righe KEY: VALUE
-    let mut data = ReceiptData::default();
-    for line in text.lines() {
-        let line = line.trim();
-        if let Some(val) = line.strip_prefix("AMOUNT:").or_else(|| line.strip_prefix("Amount:")) {
-            let val = val.trim().replace(',', ".").replace(['€','$',' '], "");
-            if let Ok(f) = val.parse::<f64>() { data.importo = Some(f); }
-        } else if let Some(val) = line.strip_prefix("DATE:").or_else(|| line.strip_prefix("Date:")) {
-            let val = val.trim();
-            if val != "N/A" && !val.is_empty() { data.data = Some(val.to_string()); }
-        } else if let Some(val) = line.strip_prefix("STORE:").or_else(|| line.strip_prefix("Store:")) {
-            let val = val.trim();
-            if val != "N/A" && !val.is_empty() { data.descrizione = Some(val.to_string()); }
-        } else if let Some(val) = line.strip_prefix("CATEGORY:").or_else(|| line.strip_prefix("Category:")) {
-            let val = val.trim();
-            if val != "N/A" && !val.is_empty() { data.categoria = Some(val.to_string()); }
-        }
-    }
-
-    // Fallback regex sull'OCR grezzo se importo ancora mancante
-    if data.importo.is_none() {
-        // Prova prima con keyword (totale/importo/pagato)
-        let re_kw = regex::Regex::new(r"(?:total[ei]?|importo|da pagare|pagato)[^\d]*(\d+[,. ]\d{1,2})").ok();
-        if let Some(re) = re_kw {
-            if let Some(cap) = re.captures(&raw_text.to_lowercase()) {
-                let s = cap[1].replace([',', ' '], ".");
-                if let Ok(f) = s.parse::<f64>() { data.importo = Some(f); }
-            }
-        }
-    }
-    if data.importo.is_none() {
-        // Fallback generico: pattern -?N,NN€ o N NN€
-        let re_amt = regex::Regex::new(r"-?(\d+)[,. ](\d{2})\s*[€$]").ok();
-        if let Some(re) = re_amt {
-            if let Some(cap) = re.captures(&raw_text) {
-                let s = format!("{}.{}", &cap[1], &cap[2]);
-                if let Ok(f) = s.parse::<f64>() { data.importo = Some(f); }
+    {
+        if let Ok(json) = resp.json::<serde_json::Value>().await {
+            let text = json["response"].as_str().unwrap_or("");
+            for line in text.lines() {
+                // strip markdown bold/italic and normalise
+                let clean = line.trim().trim_matches('*').trim_matches('_').trim();
+                let low = clean.to_lowercase();
+                if let Some(val) = low.strip_prefix("store:") {
+                    let v = val.trim().trim_matches(|c: char| !c.is_alphanumeric() && c != ' ' && c != '*');
+                    // use original-case from clean line
+                    if !v.is_empty() && v != "n/a" && data.descrizione.is_none() {
+                        let orig = &clean[clean.to_lowercase().find("store:").unwrap_or(0) + 6..];
+                        let v2 = orig.trim().trim_matches(|c: char| !c.is_alphanumeric() && c != ' ' && c != '*');
+                        if !v2.is_empty() { data.descrizione = Some(v2.to_string()); }
+                    }
+                } else if let Some(val) = low.strip_prefix("category:") {
+                    let v = val.trim().trim_matches(|c: char| !c.is_alphanumeric());
+                    let valid = ["cibo","trasporti","casa","salute","svago","abbigliamento","istruzione","sport","lavoro","altro"];
+                    // find first valid category keyword in the value
+                    for cat in valid {
+                        if v.contains(cat) {
+                            let display = match cat {
+                                "cibo" => "Cibo", "trasporti" => "Trasporti", "casa" => "Casa",
+                                "salute" => "Salute", "svago" => "Svago", "abbigliamento" => "Abbigliamento",
+                                "istruzione" => "Istruzione", "sport" => "Sport", "lavoro" => "Lavoro",
+                                _ => "Altro",
+                            };
+                            data.categoria = Some(display.to_string());
+                            break;
+                        }
+                    }
+                }
             }
         }
     }
