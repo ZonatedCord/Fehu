@@ -5,7 +5,8 @@ pub struct Db(pub Mutex<Connection>);
 
 pub fn open(path: &str) -> SqlResult<Connection> {
     let conn = Connection::open(path)?;
-    conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;")?;
+    conn.pragma_update(None, "journal_mode", "WAL")?;
+    conn.pragma_update(None, "foreign_keys", &true)?;
     migrate(&conn)?;
     Ok(conn)
 }
