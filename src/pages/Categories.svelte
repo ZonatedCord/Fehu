@@ -36,7 +36,7 @@
   }
 
   async function remove(id: number) {
-    if (!confirm('Delete this category? Transactions keep their data.')) return;
+    if (!confirm('Eliminare questa categoria? Le transazioni mantengono i dati.')) return;
     try { await api.deleteCategory(id); await load(); }
     catch (e: any) { error = e.message ?? String(e); }
   }
@@ -44,8 +44,8 @@
 
 <div class="page">
   <div class="page-header">
-    <h1>Categories</h1>
-    <button class="btn-primary" onclick={openCreate}><Plus size={14} /> New</button>
+    <h1>Categorie</h1>
+    <button class="btn-primary" onclick={openCreate}><Plus size={14} /> Nuova</button>
   </div>
   {#if error}<p class="error">{error}</p>{/if}
   <div class="grid">
@@ -57,25 +57,25 @@
         </span>
         <span class="name">{cat.name}</span>
         <div class="actions">
-          <button onclick={() => openEdit(cat)}>Edit</button>
-          <button class="danger" onclick={() => remove(cat.id)}>Del</button>
+          <button onclick={() => openEdit(cat)}>Modifica</button>
+          <button class="danger" onclick={() => remove(cat.id)}>Elimina</button>
         </div>
       </div>
     {/each}
   </div>
 </div>
 
-<Modal title={editing ? 'Edit Category' : 'New Category'} open={modalOpen} onclose={() => modalOpen = false}>
+<Modal title={editing ? 'Modifica categoria' : 'Nuova categoria'} open={modalOpen} onclose={() => modalOpen = false}>
   <form onsubmit={(e) => { e.preventDefault(); save(); }}>
-    <label>Name<input bind:value={form.name} placeholder="e.g. Food" required /></label>
-    <label>Color<input type="color" bind:value={form.color} /></label>
+    <label>Nome<input bind:value={form.name} placeholder="es. Cibo" required /></label>
+    <label>Colore<input type="color" bind:value={form.color} /></label>
     <label>
-      Icon
+      Icona
       <IconPicker value={form.icon} onselect={(n) => form.icon = n} />
     </label>
     <div class="form-actions">
-      <button type="button" onclick={() => modalOpen = false}>Cancel</button>
-      <button type="submit" class="btn-primary" disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
+      <button type="button" onclick={() => modalOpen = false}>Annulla</button>
+      <button type="submit" class="btn-primary" disabled={saving}>{saving ? 'Salvataggio…' : 'Salva'}</button>
     </div>
   </form>
 </Modal>
