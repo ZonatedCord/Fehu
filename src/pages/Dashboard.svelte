@@ -51,7 +51,7 @@
       categoryChart = new Chart(categoryCanvas, {
         type: 'doughnut',
         data: {
-          labels: stats.by_category.map(c => c.category_name ?? 'Uncategorized'),
+          labels: stats.by_category.map(c => c.category_name ?? 'Senza categoria'),
           datasets: [{ data: stats.by_category.map(c => c.total), backgroundColor: stats.by_category.map(c => c.color ?? '#6366f1'), borderWidth: 0 }],
         },
         options: { responsive: true, plugins: { legend: { labels: { color: '#ccc' } } } },

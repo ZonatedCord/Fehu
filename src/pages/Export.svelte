@@ -18,7 +18,7 @@
     importing = true; error = ''; importResult = '';
     try {
       const count: number = await invoke('import_xlsx', { filePath: path });
-      importResult = `Imported ${count} transactions.`;
+      importResult = `Importate ${count} transazioni.`;
     } catch (e: any) { error = e.message ?? String(e); }
     finally { importing = false; }
   }

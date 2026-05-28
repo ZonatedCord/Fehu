@@ -8,24 +8,24 @@
 
   let { value = 'package', onselect }: { value: string; onselect: (name: string) => void } = $props();
 
-  const icons: { name: string; component: Component }[] = [
-    { name: 'utensils',        component: Utensils },
-    { name: 'car',             component: Car },
-    { name: 'heart-pulse',     component: HeartPulse },
-    { name: 'zap',             component: Zap },
-    { name: 'home',            component: Home },
-    { name: 'shopping-cart',   component: ShoppingCart },
-    { name: 'briefcase',       component: Briefcase },
-    { name: 'gamepad-2',       component: Gamepad2 },
-    { name: 'plane',           component: Plane },
-    { name: 'book-open',       component: BookOpen },
-    { name: 'dumbbell',        component: Dumbbell },
-    { name: 'coffee',          component: Coffee },
-    { name: 'package',         component: Package },
-    { name: 'shirt',           component: Shirt },
-    { name: 'wrench',          component: Wrench },
-    { name: 'music',           component: Music },
-    { name: 'more-horizontal', component: MoreHorizontal },
+  const icons: { name: string; label: string; component: Component }[] = [
+    { name: 'utensils',        label: 'Cucina',        component: Utensils },
+    { name: 'car',             label: 'Auto',          component: Car },
+    { name: 'heart-pulse',     label: 'Salute',        component: HeartPulse },
+    { name: 'zap',             label: 'Elettricità',   component: Zap },
+    { name: 'home',            label: 'Casa',          component: Home },
+    { name: 'shopping-cart',   label: 'Spesa',         component: ShoppingCart },
+    { name: 'briefcase',       label: 'Lavoro',        component: Briefcase },
+    { name: 'gamepad-2',       label: 'Svago',         component: Gamepad2 },
+    { name: 'plane',           label: 'Viaggi',        component: Plane },
+    { name: 'book-open',       label: 'Istruzione',    component: BookOpen },
+    { name: 'dumbbell',        label: 'Sport',         component: Dumbbell },
+    { name: 'coffee',          label: 'Bar',           component: Coffee },
+    { name: 'package',         label: 'Altro',         component: Package },
+    { name: 'shirt',           label: 'Abbigliamento', component: Shirt },
+    { name: 'wrench',          label: 'Riparazioni',   component: Wrench },
+    { name: 'music',           label: 'Musica',        component: Music },
+    { name: 'more-horizontal', label: 'Generico',      component: MoreHorizontal },
   ];
 </script>
 
@@ -36,7 +36,7 @@
       type="button"
       class:selected={value === ic.name}
       onclick={() => onselect(ic.name)}
-      title={ic.name}
+      title={ic.label}
     >
       <Icon size={18} />
     </button>
