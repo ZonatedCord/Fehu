@@ -47,7 +47,7 @@
     const unDrag = await listen('tauri://drag', () => { dragging = true; });
     const unLeave = await listen('tauri://drag-leave', () => { dragging = false; });
     const unCancel = await listen('tauri://drag-cancelled', () => { dragging = false; });
-    const unDrop = await listen<{ paths: string[] }>('tauri://drag-drop', (e) => {
+    const unDrop = await listen<{ paths: string[] }>('tauri://drag-drop', async (e) => {
       dragging = false;
       const img = e.payload.paths.find(p =>
         IMAGE_EXTS.some(ext => p.toLowerCase().endsWith('.' + ext))
