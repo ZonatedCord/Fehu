@@ -90,3 +90,20 @@ pub struct ReceiptData {
     pub descrizione: Option<String>,
     pub categoria: Option<String>,
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct BalanceAdjustment {
+    pub id: i64,
+    pub metodo: String,
+    pub amount: f64,
+    pub note: String,
+    pub date: String,
+    pub created_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PatrimonioStats {
+    pub saldo_contanti: f64,
+    pub saldo_carta: f64,
+    pub totale: f64,
+}
