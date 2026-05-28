@@ -83,7 +83,16 @@
       if (result.descrizione) descrizione = result.descrizione;
       if (result.categoria) {
         const match = categories.find(c => c.name.toLowerCase() === result.categoria!.toLowerCase());
-        if (match) categoriaId = match.id;
+        if (match) {
+          categoriaId = match.id;
+        } else {
+          // crea categoria al volo se non esiste
+          try {
+            const cat = await api.createCategory(result.categoria!, '#6366f1', 'package');
+            categories = [...categories, cat].sort((a, b) => a.name.localeCompare(b.name));
+            categoriaId = cat.id;
+          } catch { /* ignora errori duplicati */ }
+        }
       }
     } catch (e: any) { error = e.message ?? String(e); }
     finally { analyzing = false; }
@@ -142,8 +151,8 @@
 
       {#if error}
         <p class="error">{error}</p>
-        {#if error.includes('moondream')}
-          <p class="hint-error">Esegui: <code>ollama pull moondream</code></p>
+        {#if error.includes('Tesseract')}
+          <p class="hint-error">Esegui: <code>brew install tesseract tesseract-lang</code></p>
         {/if}
       {/if}
     </div>
