@@ -145,7 +145,8 @@ Transaction: {merchant}\nCategory:"
     let parse_body = serde_json::json!({
         "model": "qwen2.5-coder:7b",
         "prompt": parse_prompt,
-        "stream": false
+        "stream": false,
+        "keep_alive": 0
     });
 
     if let Ok(resp) = client
