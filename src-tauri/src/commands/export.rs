@@ -2,6 +2,14 @@ use crate::{error::AppResult, models::Transaction, AppState};
 use rusqlite::params;
 use tauri::State;
 
+fn csv_field(s: &str) -> String {
+    if s.contains(',') || s.contains('"') || s.contains('\n') || s.contains('\r') {
+        format!("\"{}\"", s.replace('"', "\"\""))
+    } else {
+        s.to_string()
+    }
+}
+
 #[tauri::command]
 pub fn export_csv(
     state: State<AppState>,
@@ -24,13 +32,16 @@ pub fn export_csv(
     for t in rows {
         csv.push_str(&format!(
             "{},{},{},{},{},{},{},{},{},{}\n",
-            t.id, t.amount, t.tx_type,
+            t.id,
+            t.amount,
+            t.tx_type,
             t.category_id.map(|i| i.to_string()).unwrap_or_default(),
-            t.category_name.unwrap_or_default(),
+            csv_field(&t.category_name.unwrap_or_default()),
             t.date,
-            t.description.replace(',', ";"),
-            t.notes.replace(',', ";"),
-            t.source, t.created_at,
+            csv_field(&t.description),
+            csv_field(&t.notes),
+            csv_field(&t.source),
+            t.created_at,
         ));
     }
     Ok(csv)
