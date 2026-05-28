@@ -46,6 +46,7 @@ pub fn run() {
             commands::goals::create_goal,
             commands::goals::update_goal_saved,
             commands::goals::delete_goal,
+            commands::goals::contribute_to_goal,
             commands::patrimonio::get_patrimonio,
             commands::patrimonio::list_balance_adjustments,
             commands::patrimonio::create_balance_adjustment,

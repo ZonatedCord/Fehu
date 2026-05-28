@@ -41,3 +41,89 @@ pub fn delete_goal(state: State<AppState>, id: i64) -> AppResult<()> {
     if rows == 0 { return Err(AppError::NotFound); }
     Ok(())
 }
+
+#[tauri::command]
+pub fn contribute_to_goal(
+    state: State<AppState>,
+    goal_id: i64,
+    amount: f64,
+    metodo: String,
+    date: String,
+) -> AppResult<Goal> {
+    if amount <= 0.0 { return Err(AppError::Validation("Importo deve essere positivo".into())); }
+    let conn = state.db.0.lock().unwrap();
+    let goal_name: String = conn.query_row(
+        "SELECT name FROM goals WHERE id=?1", params![goal_id],
+        |r| r.get(0),
+    ).map_err(|_| AppError::NotFound)?;
+    conn.execute(
+        "INSERT INTO transactions (amount,type,date,description,notes,source,metodo)
+         VALUES (?1,'expense',?2,?3,'','manual',?4)",
+        params![amount, date, format!("Versamento: {}", goal_name), metodo],
+    )?;
+    conn.execute(
+        "UPDATE goals SET saved = MIN(saved + ?1, target) WHERE id=?2",
+        params![amount, goal_id],
+    )?;
+    Ok(conn.query_row(
+        "SELECT id,name,target,saved,color,icon,created_at FROM goals WHERE id=?1",
+        params![goal_id],
+        |r| Ok(Goal {
+            id: r.get(0)?, name: r.get(1)?, target: r.get(2)?,
+            saved: r.get(3)?, color: r.get(4)?, icon: r.get(5)?, created_at: r.get(6)?,
+        }),
+    )?)
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::db::open_in_memory;
+
+    #[test]
+    fn contribute_to_goal_aggiorna_saved_e_crea_tx() {
+        let conn = open_in_memory().unwrap();
+        conn.execute(
+            "INSERT INTO goals (name,target,color) VALUES ('Vacanze',1000.0,'#6366f1')",
+            [],
+        ).unwrap();
+        let goal_id: i64 = conn.last_insert_rowid();
+        conn.execute(
+            "INSERT INTO transactions (amount,type,date,description,notes,source,metodo)
+             VALUES (100.0,'expense','2025-01-01','Versamento: Vacanze','','manual','carta')",
+            [],
+        ).unwrap();
+        conn.execute(
+            "UPDATE goals SET saved = MIN(saved + 100.0, target) WHERE id=?1",
+            rusqlite::params![goal_id],
+        ).unwrap();
+        let saved: f64 = conn.query_row(
+            "SELECT saved FROM goals WHERE id=?1", rusqlite::params![goal_id],
+            |r| r.get(0),
+        ).unwrap();
+        assert_eq!(saved, 100.0);
+        let tx_count: i64 = conn.query_row(
+            "SELECT count(*) FROM transactions WHERE description LIKE 'Versamento:%'",
+            [], |r| r.get(0),
+        ).unwrap();
+        assert_eq!(tx_count, 1);
+    }
+
+    #[test]
+    fn contribute_non_supera_target() {
+        let conn = open_in_memory().unwrap();
+        conn.execute(
+            "INSERT INTO goals (name,target,saved,color) VALUES ('Test',100.0,90.0,'#fff')",
+            [],
+        ).unwrap();
+        let goal_id: i64 = conn.last_insert_rowid();
+        conn.execute(
+            "UPDATE goals SET saved = MIN(saved + 50.0, target) WHERE id=?1",
+            rusqlite::params![goal_id],
+        ).unwrap();
+        let saved: f64 = conn.query_row(
+            "SELECT saved FROM goals WHERE id=?1", rusqlite::params![goal_id],
+            |r| r.get(0),
+        ).unwrap();
+        assert_eq!(saved, 100.0);
+    }
+}
