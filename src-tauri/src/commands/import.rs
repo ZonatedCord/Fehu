@@ -1,5 +1,5 @@
 use crate::{error::{AppError, AppResult}, AppState};
-use calamine::{open_workbook, Data, DataType, Reader, Xlsx};
+use calamine::{open_workbook, Data, Reader, Xlsx};
 use rusqlite::params;
 use tauri::State;
 
@@ -39,6 +39,8 @@ pub fn import_xlsx(state: State<AppState>, file_path: String) -> AppResult<u32> 
 
     let conn = state.db.0.lock().unwrap();
     let mut imported: u32 = 0;
+
+    conn.execute_batch("BEGIN")?;
 
     for (row_idx, row) in sheet.rows().enumerate() {
         if row_idx == 0 { continue; } // skip header
@@ -80,6 +82,8 @@ pub fn import_xlsx(state: State<AppState>, file_path: String) -> AppResult<u32> 
         )?;
         imported += 1;
     }
+
+    conn.execute_batch("COMMIT")?;
     Ok(imported)
 }
 
