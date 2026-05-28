@@ -5,9 +5,9 @@
 
   const nav: { label: string; page: Page; icon: typeof LayoutDashboard }[] = [
     { label: 'Dashboard',    page: 'dashboard',    icon: LayoutDashboard },
-    { label: 'Transactions', page: 'transactions', icon: ArrowUpDown },
-    { label: 'Categories',   page: 'categories',   icon: Tag },
-    { label: 'Data',         page: 'export',       icon: Database },
+    { label: 'Transazioni', page: 'transactions', icon: ArrowUpDown },
+    { label: 'Categorie',   page: 'categories',   icon: Tag },
+    { label: 'Dati',         page: 'export',       icon: Database },
   ];
 </script>
 
