@@ -3,6 +3,7 @@
   import { Chart, registerables } from 'chart.js';
   import { api } from '../lib/api';
   import type { DashboardStats } from '../lib/types';
+  import SankeyChart from '../components/SankeyChart.svelte';
 
   Chart.register(...registerables);
 
@@ -90,6 +91,10 @@
         {:else}<canvas bind:this={categoryCanvas}></canvas>{/if}
       </div>
     </div>
+    <div class="chart-card full">
+      <h2>Flusso denaro</h2>
+      <SankeyChart {stats} />
+    </div>
   {:else if !error}
     <p class="muted">Caricamento…</p>
   {/if}
@@ -110,6 +115,7 @@
   .charts-row { display: flex; gap: 1rem; flex-wrap: wrap; }
   .chart-card { background: #1a1a2e; border-radius: 8px; padding: 1.25rem; flex: 1; min-width: 280px; }
   .chart-card.wide { flex: 2; }
+  .chart-card.full { flex: 1 0 100%; }
   h2 { margin: 0 0 1rem; font-size: 0.95rem; color: #aaa; font-weight: 500; }
   .error { color: #f87171; }
   .muted { color: #555; }
