@@ -53,6 +53,15 @@ fn migrate(conn: &Connection) -> SqlResult<()> {
             icon       TEXT    NOT NULL DEFAULT 'piggy-bank',
             created_at TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
         );
+
+        CREATE TABLE IF NOT EXISTS balance_adjustments (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            metodo     TEXT    NOT NULL CHECK(metodo IN ('contanti','carta')),
+            amount     REAL    NOT NULL,
+            note       TEXT    NOT NULL DEFAULT '',
+            date       TEXT    NOT NULL,
+            created_at TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+        );
     ")?;
     // Add metodo column if not exists (idempotent)
     let _ = conn.execute("ALTER TABLE transactions ADD COLUMN metodo TEXT NOT NULL DEFAULT 'carta'", []);
@@ -76,5 +85,14 @@ mod tests {
     fn migration_is_idempotent() {
         let conn = open_in_memory().unwrap();
         migrate(&conn).unwrap();
+    }
+
+    #[test]
+    fn balance_adjustments_table_exists() {
+        let conn = open_in_memory().unwrap();
+        let count: i64 = conn
+            .query_row("SELECT count(*) FROM balance_adjustments", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(count, 0);
     }
 }
