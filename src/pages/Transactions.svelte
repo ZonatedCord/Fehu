@@ -51,9 +51,15 @@
   }
 
   async function remove(id: number) {
-    if (!confirm('Delete transaction?')) return;
+    if (!confirm('Eliminare questa transazione?')) return;
     try { await api.deleteTransaction(id); await load(); }
     catch (e: any) { error = e.message ?? String(e); }
+  }
+
+  function formatDate(iso: string): string {
+    if (!iso || iso.length < 10) return iso;
+    const [y, m, d] = iso.split('-');
+    return `${d}/${m}/${y}`;
   }
 
   function fmt(n: number) {
@@ -63,17 +69,17 @@
 
 <div class="page">
   <div class="page-header">
-    <h1>Transactions</h1>
-    <button class="btn-primary" onclick={openCreate}>+ Add</button>
+    <h1>Transazioni</h1>
+    <button class="btn-primary" onclick={openCreate}>+ Aggiungi</button>
   </div>
   <div class="filters">
     <select bind:value={filterType}>
-      <option value="all">All types</option>
-      <option value="income">Income</option>
-      <option value="expense">Expense</option>
+      <option value="all">Tutti i tipi</option>
+      <option value="income">Entrata</option>
+      <option value="expense">Uscita</option>
     </select>
     <select bind:value={filterCat}>
-      <option value="">All categories</option>
+      <option value="">Tutte le categorie</option>
       {#each categories as cat (cat.id)}
         <option value={cat.id}>{cat.name}</option>
       {/each}
@@ -81,52 +87,52 @@
   </div>
   {#if error}<p class="error">{error}</p>{/if}
   <table>
-    <thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Amount</th><th></th></tr></thead>
+    <thead><tr><th>Data</th><th>Descrizione</th><th>Categoria</th><th>Importo</th><th></th></tr></thead>
     <tbody>
       {#each filtered as tx (tx.id)}
         <tr>
-          <td class="date">{tx.date}</td>
+          <td class="date">{formatDate(tx.date)}</td>
           <td>{tx.description || '—'}</td>
           <td>{#if tx.category_name}<span class="tag">{tx.category_name}</span>{:else}<span class="muted">—</span>{/if}</td>
           <td class="amount" class:income={tx.type === 'income'} class:expense={tx.type === 'expense'}>
             {tx.type === 'income' ? '+' : '-'}{fmt(tx.amount)}
           </td>
           <td class="row-actions">
-            <button onclick={() => openEdit(tx)}>Edit</button>
-            <button class="danger" onclick={() => remove(tx.id)}>Del</button>
+            <button onclick={() => openEdit(tx)}>Modifica</button>
+            <button class="danger" onclick={() => remove(tx.id)}>Elimina</button>
           </td>
         </tr>
       {/each}
       {#if filtered.length === 0}
-        <tr><td colspan="5" class="empty">No transactions</td></tr>
+        <tr><td colspan="5" class="empty">Nessuna transazione</td></tr>
       {/if}
     </tbody>
   </table>
 </div>
 
-<Modal title={editing ? 'Edit Transaction' : 'New Transaction'} open={modalOpen} onclose={() => modalOpen = false}>
+<Modal title={editing ? 'Modifica transazione' : 'Nuova transazione'} open={modalOpen} onclose={() => modalOpen = false}>
   <form onsubmit={(e) => { e.preventDefault(); save(); }}>
-    <label>Type
+    <label>Tipo
       <select bind:value={form.type}>
-        <option value="expense">Expense</option>
-        <option value="income">Income</option>
+        <option value="expense">Uscita</option>
+        <option value="income">Entrata</option>
       </select>
     </label>
-    <label>Amount (€)<input type="number" bind:value={form.amount} min="0.01" step="0.01" required /></label>
-    <label>Date<input type="date" bind:value={form.date} required /></label>
-    <label>Description<input bind:value={form.description} placeholder="e.g. Caffè al bar" /></label>
-    <label>Category
+    <label>Importo (€)<input type="number" bind:value={form.amount} min="0.01" step="0.01" required /></label>
+    <label>Data<input type="date" bind:value={form.date} required /></label>
+    <label>Descrizione<input bind:value={form.description} placeholder="es. Caffè al bar" /></label>
+    <label>Categoria
       <select bind:value={form.category_id}>
-        <option value={null}>— none —</option>
+        <option value={null}>— nessuna —</option>
         {#each categories as cat (cat.id)}
           <option value={cat.id}>{cat.name}</option>
         {/each}
       </select>
     </label>
-    <label>Notes<textarea bind:value={form.notes} rows="2"></textarea></label>
+    <label>Note<textarea bind:value={form.notes} rows="2"></textarea></label>
     <div class="form-actions">
-      <button type="button" onclick={() => modalOpen = false}>Cancel</button>
-      <button type="submit" class="btn-primary" disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
+      <button type="button" onclick={() => modalOpen = false}>Annulla</button>
+      <button type="submit" class="btn-primary" disabled={saving}>{saving ? 'Salvataggio…' : 'Salva'}</button>
     </div>
   </form>
 </Modal>
