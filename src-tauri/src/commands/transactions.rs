@@ -66,6 +66,9 @@ pub fn update_transaction(state: State<AppState>, id: i64, input: TransactionInp
     if input.amount <= 0.0 {
         return Err(AppError::Validation("amount must be positive".into()));
     }
+    if input.tx_type != "income" && input.tx_type != "expense" {
+        return Err(AppError::Validation("type must be income or expense".into()));
+    }
     let conn = state.db.0.lock().unwrap();
     let rows = conn.execute(
         "UPDATE transactions SET amount=?1,type=?2,category_id=?3,date=?4,description=?5,notes=?6 WHERE id=?7",
