@@ -69,3 +69,18 @@ export interface Goal {
 }
 
 export type Page = 'dashboard' | 'transactions' | 'categories' | 'export' | 'foto' | 'obiettivi';
+
+export interface BalanceAdjustment {
+  id: number;
+  metodo: string;
+  amount: number;
+  note: string;
+  date: string;
+  created_at: string;
+}
+
+export interface PatrimonioStats {
+  saldo_contanti: number;
+  saldo_carta: number;
+  totale: number;
+}

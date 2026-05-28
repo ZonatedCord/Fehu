@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Category, DashboardStats, Goal, Transaction, TransactionInput } from './types';
+import type { BalanceAdjustment, Category, DashboardStats, Goal, PatrimonioStats, Transaction, TransactionInput } from './types';
 
 export const api = {
   listCategories: () => invoke<Category[]>('list_categories'),
@@ -30,4 +30,12 @@ export const api = {
   updateGoalSaved: (id: number, saved: number) =>
     invoke<void>('update_goal_saved', { id, saved }),
   deleteGoal: (id: number) => invoke<void>('delete_goal', { id }),
+  contributeToGoal: (goalId: number, amount: number, metodo: string, date: string) =>
+    invoke<Goal>('contribute_to_goal', { goal_id: goalId, amount, metodo, date }),
+
+  getPatrimonio: () => invoke<PatrimonioStats>('get_patrimonio'),
+  listBalanceAdjustments: () => invoke<BalanceAdjustment[]>('list_balance_adjustments'),
+  createBalanceAdjustment: (metodo: string, amount: number, note: string, date: string) =>
+    invoke<BalanceAdjustment>('create_balance_adjustment', { metodo, amount, note, date }),
+  deleteBalanceAdjustment: (id: number) => invoke<void>('delete_balance_adjustment', { id }),
 };
