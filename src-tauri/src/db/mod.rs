@@ -5,8 +5,10 @@ pub struct Db(pub Mutex<Connection>);
 
 pub fn open(path: &str) -> SqlResult<Connection> {
     let conn = Connection::open(path)?;
-    conn.pragma_update(None, "journal_mode", "WAL")?;
-    conn.pragma_update(None, "foreign_keys", &true)?;
+    // journal_mode=WAL returns a result row — must query, not execute
+    let _: String = conn.query_row("PRAGMA journal_mode=WAL", [], |r| r.get(0))?;
+    // foreign_keys=ON does not return rows
+    conn.execute_batch("PRAGMA foreign_keys=ON")?;
     migrate(&conn)?;
     Ok(conn)
 }
