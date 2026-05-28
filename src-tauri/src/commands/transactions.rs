@@ -1,4 +1,4 @@
-use crate::{db::Db, error::{AppError, AppResult}, models::Transaction, AppState};
+use crate::{error::{AppError, AppResult}, models::Transaction, AppState};
 use rusqlite::params;
 use tauri::State;
 
