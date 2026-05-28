@@ -2,6 +2,24 @@ use crate::{error::{AppError, AppResult}, models::ReceiptData};
 use base64::{engine::general_purpose::STANDARD, Engine};
 
 #[tauri::command]
+pub async fn read_image_base64(path: String) -> AppResult<String> {
+    let bytes = std::fs::read(&path)
+        .map_err(|e| AppError::Validation(format!("Impossibile leggere il file: {e}")))?;
+    let ext = std::path::Path::new(&path)
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("jpg")
+        .to_lowercase();
+    let mime = match ext.as_str() {
+        "png" => "image/png",
+        "webp" => "image/webp",
+        "gif" => "image/gif",
+        _ => "image/jpeg",
+    };
+    Ok(format!("data:{};base64,{}", mime, STANDARD.encode(&bytes)))
+}
+
+#[tauri::command]
 pub async fn analyze_receipt(image_path: String) -> AppResult<ReceiptData> {
     let bytes = std::fs::read(&image_path)
         .map_err(|e| AppError::Validation(format!("Impossibile leggere il file: {e}")))?;

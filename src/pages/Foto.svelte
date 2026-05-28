@@ -1,7 +1,6 @@
 <script lang="ts">
   import { invoke } from '@tauri-apps/api/core';
   import { open } from '@tauri-apps/plugin-dialog';
-  import { convertFileSrc } from '@tauri-apps/api/core';
   import { listen } from '@tauri-apps/api/event';
   import { onMount } from 'svelte';
   import { api } from '../lib/api';
@@ -53,24 +52,27 @@
       const img = e.payload.paths.find(p =>
         IMAGE_EXTS.some(ext => p.toLowerCase().endsWith('.' + ext))
       );
-      if (img) setImage(img);
+      if (img) await setImage(img);
     });
 
     return () => { unDrag(); unLeave(); unCancel(); unDrop(); };
   });
 
-  function setImage(path: string) {
+  async function setImage(path: string) {
     imagePath = path;
-    previewUrl = convertFileSrc(path);
+    previewUrl = '';
     receipt = null;
     error = '';
+    try {
+      previewUrl = await invoke<string>('read_image_base64', { path });
+    } catch { previewUrl = ''; }
   }
 
   async function scegliImmagine() {
     const path = await open({
       filters: [{ name: 'Immagini', extensions: IMAGE_EXTS }],
     });
-    if (path && typeof path === 'string') setImage(path);
+    if (path && typeof path === 'string') await setImage(path);
   }
 
   async function analizza() {
