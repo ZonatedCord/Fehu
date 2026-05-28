@@ -11,6 +11,15 @@
   let newTarget = $state(0);
   let newColor = $state('#6366f1');
   let saving = $state(false);
+  let goalMetodo = $state<Record<number, 'contanti' | 'carta'>>({});
+
+  function getMetodo(goalId: number): 'contanti' | 'carta' {
+    return goalMetodo[goalId] ?? 'carta';
+  }
+
+  function setMetodo(goalId: number, m: 'contanti' | 'carta') {
+    goalMetodo = { ...goalMetodo, [goalId]: m };
+  }
 
   async function load() {
     try { goals = await api.listGoals(); }
@@ -30,9 +39,11 @@
   }
 
   async function aggiungi(goal: Goal, amount: number) {
-    const newSaved = Math.min(goal.saved + amount, goal.target);
+    if (amount <= 0) return;
+    const metodo = getMetodo(goal.id);
+    const date = new Date().toISOString().slice(0, 10);
     try {
-      await api.updateGoalSaved(goal.id, newSaved);
+      await api.contributeToGoal(goal.id, amount, metodo, date);
       await load();
     } catch (e: any) { error = e.message ?? String(e); }
   }
@@ -107,6 +118,10 @@
           <span class="mancano">Mancano {fmt(goal.target - goal.saved)}</span>
         </div>
         <div class="quick-add">
+          <div class="metodo-toggle">
+            <button class="metodo-btn" class:active={getMetodo(goal.id) === 'contanti'} onclick={() => setMetodo(goal.id, 'contanti')}>Contanti</button>
+            <button class="metodo-btn" class:active={getMetodo(goal.id) === 'carta'} onclick={() => setMetodo(goal.id, 'carta')}>Carta</button>
+          </div>
           {#each [10, 50, 100] as amt}
             <button class="btn-add" onclick={() => aggiungi(goal, amt)}>+{amt}€</button>
           {/each}
@@ -152,4 +167,7 @@
   .btn-add { background: #0f0f1a; border: 1px solid #2e2e4e; color: #aaa; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.78rem; }
   .btn-add:hover { border-color: var(--c, #6366f1); color: var(--c, #6366f1); }
   .quick-add input { width: 70px; padding: 0.25rem 0.4rem; border: 1px solid #2e2e4e; border-radius: 4px; background: #0f0f1a; color: #e0e0f0; font-size: 0.78rem; }
+  .metodo-toggle { display: flex; gap: 0.2rem; width: 100%; margin-bottom: 0.3rem; }
+  .metodo-btn { flex: 1; background: #0f0f1a; border: 1px solid #2e2e4e; color: #555; padding: 0.2rem 0.4rem; border-radius: 4px; cursor: pointer; font-size: 0.72rem; }
+  .metodo-btn.active { border-color: var(--c, #6366f1); color: var(--c, #6366f1); }
 </style>
