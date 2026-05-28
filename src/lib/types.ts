@@ -49,4 +49,11 @@ export interface DashboardStats {
   by_category: CategorySummary[];
 }
 
-export type Page = 'dashboard' | 'transactions' | 'categories' | 'export';
+export interface ReceiptData {
+  importo: number | null;
+  data: string | null;
+  descrizione: string | null;
+  categoria: string | null;
+}
+
+export type Page = 'dashboard' | 'transactions' | 'categories' | 'export' | 'foto';

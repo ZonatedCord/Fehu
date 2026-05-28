@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { LayoutDashboard, ArrowUpDown, Tag, Database } from '@lucide/svelte';
+  import { LayoutDashboard, ArrowUpDown, Tag, Database, Camera } from '@lucide/svelte';
   import { currentPage } from '../lib/stores';
   import type { Page } from '../lib/types';
 
@@ -8,6 +8,7 @@
     { label: 'Transazioni', page: 'transactions', icon: ArrowUpDown },
     { label: 'Categorie',   page: 'categories',   icon: Tag },
     { label: 'Dati',         page: 'export',       icon: Database },
+    { label: 'Foto',         page: 'foto',         icon: Camera },
   ];
 </script>
 

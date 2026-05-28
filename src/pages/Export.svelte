@@ -11,6 +11,8 @@
   let importResult = $state('');
   let error = $state('');
   let success = $state('');
+  let exportingXlsx = $state(false);
+  let successXlsx = $state('');
 
   async function doImport() {
     const path = await open({ filters: [{ name: 'Excel', extensions: ['xlsx'] }] });
@@ -21,6 +23,24 @@
       importResult = `Importate ${count} transazioni.`;
     } catch (e: any) { error = e.message ?? String(e); }
     finally { importing = false; }
+  }
+
+  async function doExportXlsx() {
+    exportingXlsx = true; error = ''; successXlsx = '';
+    try {
+      const { save } = await import('@tauri-apps/plugin-dialog');
+      const filePath = await save({
+        filters: [{ name: 'Excel', extensions: ['xlsx'] }],
+        defaultPath: `fehu-${new Date().toISOString().slice(0,10)}.xlsx`,
+      });
+      if (!filePath) return;
+      await api.exportXlsx(filePath, {
+        start_date: startDate || undefined,
+        end_date: endDate || undefined,
+      });
+      successXlsx = 'File Excel salvato.';
+    } catch (e: any) { error = e.message ?? String(e); }
+    finally { exportingXlsx = false; }
   }
 
   async function doExport() {
@@ -67,6 +87,17 @@
     {#if success}<p class="success">{success}</p>{/if}
   </section>
 
+  <hr />
+
+  <section>
+    <h2>Esporta Excel (.xlsx)</h2>
+    <p class="hint">Stessi filtri date del CSV. Si apre la finestra di salvataggio.</p>
+    <button class="btn-excel" onclick={doExportXlsx} disabled={exportingXlsx}>
+      {exportingXlsx ? 'Esportazione…' : 'Esporta .xlsx'}
+    </button>
+    {#if successXlsx}<p class="success">{successXlsx}</p>{/if}
+  </section>
+
   {#if error}<p class="error">{error}</p>{/if}
 </div>
 
@@ -87,6 +118,8 @@
   .btn-primary { background: #6366f1; color: #fff; align-self: flex-start; margin-top: 0.25rem; }
   .btn-secondary { background: #1a1a2e; border: 1px solid #2e2e4e; color: #ccc; }
   .btn-primary:disabled, .btn-secondary:disabled { opacity: 0.6; cursor: not-allowed; }
+  .btn-excel { display: inline-flex; align-items: center; gap: 0.4rem; background: #16a34a; color: #fff; border: none; padding: 0.55rem 1.1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
+  .btn-excel:disabled { opacity: 0.6; cursor: not-allowed; }
   .success { color: #4ade80; margin-top: 0.75rem; }
   .error { color: #f87171; margin-top: 0.75rem; }
 </style>

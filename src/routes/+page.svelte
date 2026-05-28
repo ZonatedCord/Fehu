@@ -5,6 +5,7 @@
   import Transactions from '../pages/Transactions.svelte';
   import Categories from '../pages/Categories.svelte';
   import Export from '../pages/Export.svelte';
+  import Foto from '../pages/Foto.svelte';
 </script>
 
 <div class="layout">
@@ -14,6 +15,7 @@
     {:else if $currentPage === 'transactions'}<Transactions />
     {:else if $currentPage === 'categories'}<Categories />
     {:else if $currentPage === 'export'}<Export />
+    {:else if $currentPage === 'foto'}<Foto />
     {/if}
   </main>
 </div>

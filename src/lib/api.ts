@@ -21,4 +21,6 @@ export const api = {
     invoke<DashboardStats>('get_dashboard_stats', filters ?? {}),
   exportCsv: (filters?: { start_date?: string; end_date?: string }) =>
     invoke<string>('export_csv', filters ?? {}),
+  exportXlsx: (filePath: string, filters?: { start_date?: string; end_date?: string }) =>
+    invoke<void>('export_xlsx', { filePath, ...filters }),
 };
