@@ -17,7 +17,8 @@
     'music': Music, 'more-horizontal': MoreHorizontal,
   };
 
-  const icon = $derived(map[name] ?? Package);
+  // Uppercase variable — Svelte 5 runes mode renders capitalized variables as components
+  const Icon = $derived(map[name] ?? Package);
 </script>
 
-<svelte:component this={icon} {size} />
+<Icon {size} />
