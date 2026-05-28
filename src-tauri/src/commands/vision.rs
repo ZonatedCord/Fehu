@@ -26,29 +26,53 @@ pub async fn analyze_receipt(image_path: String) -> AppResult<ReceiptData> {
     let b64 = STANDARD.encode(&bytes);
 
     let client = reqwest::Client::new();
-    let body = serde_json::json!({
+
+    // Step 1: moondream — OCR grezzo sull'immagine
+    let ocr_body = serde_json::json!({
         "model": "moondream",
-        "prompt": "Look at this receipt image. Extract these 4 values and list them one per line:\nAMOUNT: [total amount as number, e.g. 12.50]\nDATE: [date as YYYY-MM-DD, e.g. 2024-01-15]\nSTORE: [store or restaurant name]\nCATEGORY: [one of: Cibo, Trasporti, Casa, Salute, Svago, Abbigliamento, Istruzione, Sport, Lavoro, Altro]\nIf you cannot read a value write N/A.",
+        "prompt": "Read all the text visible in this receipt image. List every word and number you can see, including prices, dates, and store names. Be as complete as possible.",
         "images": [b64],
         "stream": false
     });
 
-    let resp = client
+    let ocr_resp = client
         .post("http://localhost:11434/api/generate")
-        .json(&body)
+        .json(&ocr_body)
         .timeout(std::time::Duration::from_secs(90))
         .send()
         .await
-        .map_err(|e| AppError::Validation(format!("Errore Ollama (moondream non installato?): {e}")))?;
+        .map_err(|e| AppError::Validation(format!("Errore Ollama moondream: {e}")))?;
 
-    let ollama: serde_json::Value = resp.json().await
-        .map_err(|e| AppError::Validation(format!("Risposta Ollama non valida: {e}")))?;
+    let ocr_json: serde_json::Value = ocr_resp.json().await
+        .map_err(|e| AppError::Validation(format!("Risposta moondream non valida: {e}")))?;
 
-    let text = ollama["response"]
-        .as_str()
-        .ok_or_else(|| AppError::Validation("Campo response mancante".into()))?;
+    let raw_text = ocr_json["response"].as_str().unwrap_or("").to_string();
 
-    // Parse key: value lines — robust to extra text
+    // Step 2: qwen2.5-coder — estrae struttura dal testo grezzo
+    let parse_prompt = format!(
+        "You are a receipt parser. Given this raw text extracted from a receipt, output ONLY these 4 lines (no other text):\nAMOUNT: [total amount paid as decimal number, e.g. 12.50]\nDATE: [date as YYYY-MM-DD]\nSTORE: [store or business name]\nCATEGORY: [one of: Cibo, Trasporti, Casa, Salute, Svago, Abbigliamento, Istruzione, Sport, Lavoro, Altro]\n\nIf a value is not present, write N/A.\n\nReceipt text:\n{raw_text}"
+    );
+
+    let parse_body = serde_json::json!({
+        "model": "qwen2.5-coder:7b",
+        "prompt": parse_prompt,
+        "stream": false
+    });
+
+    let parse_resp = client
+        .post("http://localhost:11434/api/generate")
+        .json(&parse_body)
+        .timeout(std::time::Duration::from_secs(60))
+        .send()
+        .await
+        .map_err(|e| AppError::Validation(format!("Errore Ollama qwen: {e}")))?;
+
+    let parse_json: serde_json::Value = parse_resp.json().await
+        .map_err(|e| AppError::Validation(format!("Risposta qwen non valida: {e}")))?;
+
+    let text = parse_json["response"].as_str().unwrap_or(&raw_text);
+
+    // Parse righe KEY: VALUE
     let mut data = ReceiptData::default();
     for line in text.lines() {
         let line = line.trim();
@@ -67,11 +91,11 @@ pub async fn analyze_receipt(image_path: String) -> AppResult<ReceiptData> {
         }
     }
 
-    // Fallback: try to find any number if amount still missing
+    // Fallback regex sull'OCR grezzo se importo ancora mancante
     if data.importo.is_none() {
-        let re = regex::Regex::new(r"(?:total|totale|importo)[^\d]*(\d+[.,]\d{1,2})").ok();
+        let re = regex::Regex::new(r"(?:total[ei]?|importo|da pagare|pagato)[^\d]*(\d+[.,]\d{1,2})").ok();
         if let Some(re) = re {
-            if let Some(cap) = re.captures(&text.to_lowercase()) {
+            if let Some(cap) = re.captures(&raw_text.to_lowercase()) {
                 if let Ok(f) = cap[1].replace(',', ".").parse::<f64>() {
                     data.importo = Some(f);
                 }
