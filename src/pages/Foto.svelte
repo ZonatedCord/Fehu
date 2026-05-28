@@ -162,7 +162,7 @@
     {/if}
   {/if}
 
-  {#if receipt !== null || (imagePath && !analyzing)}
+  {#if receipt !== null}
     <div class="form-section">
       <h2>Dati transazione</h2>
       <div class="tipo-toggle">
