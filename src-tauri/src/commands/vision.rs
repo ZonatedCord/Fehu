@@ -28,7 +28,7 @@ pub async fn analyze_receipt(image_path: String) -> AppResult<ReceiptData> {
     let client = reqwest::Client::new();
     let body = serde_json::json!({
         "model": "moondream",
-        "prompt": "Analizza questo scontrino italiano. Estrai le informazioni e rispondi SOLO con un oggetto JSON in questo formato esatto (senza testo aggiuntivo):\n{\"importo\": 12.50, \"data\": \"2024-01-15\", \"descrizione\": \"nome negozio o prodotto principale\", \"categoria\": \"Cibo\"}\nCategorie disponibili: Cibo, Trasporti, Casa, Salute, Svago, Abbigliamento, Istruzione, Sport, Lavoro, Altro\nSe non riesci a leggere un campo usa null.",
+        "prompt": "Look at this receipt image. Extract these 4 values and list them one per line:\nAMOUNT: [total amount as number, e.g. 12.50]\nDATE: [date as YYYY-MM-DD, e.g. 2024-01-15]\nSTORE: [store or restaurant name]\nCATEGORY: [one of: Cibo, Trasporti, Casa, Salute, Svago, Abbigliamento, Istruzione, Sport, Lavoro, Altro]\nIf you cannot read a value write N/A.",
         "images": [b64],
         "stream": false
     });
@@ -48,13 +48,36 @@ pub async fn analyze_receipt(image_path: String) -> AppResult<ReceiptData> {
         .as_str()
         .ok_or_else(|| AppError::Validation("Campo response mancante".into()))?;
 
-    // Extract JSON substring from response (model may add extra text)
-    let start = text.find('{').ok_or_else(|| AppError::Validation("Nessun JSON nella risposta".into()))?;
-    let end = text.rfind('}').ok_or_else(|| AppError::Validation("JSON malformato".into()))? + 1;
-    let json_str = &text[start..end];
+    // Parse key: value lines — robust to extra text
+    let mut data = ReceiptData::default();
+    for line in text.lines() {
+        let line = line.trim();
+        if let Some(val) = line.strip_prefix("AMOUNT:").or_else(|| line.strip_prefix("Amount:")) {
+            let val = val.trim().replace(',', ".").replace(['€','$',' '], "");
+            if let Ok(f) = val.parse::<f64>() { data.importo = Some(f); }
+        } else if let Some(val) = line.strip_prefix("DATE:").or_else(|| line.strip_prefix("Date:")) {
+            let val = val.trim();
+            if val != "N/A" && !val.is_empty() { data.data = Some(val.to_string()); }
+        } else if let Some(val) = line.strip_prefix("STORE:").or_else(|| line.strip_prefix("Store:")) {
+            let val = val.trim();
+            if val != "N/A" && !val.is_empty() { data.descrizione = Some(val.to_string()); }
+        } else if let Some(val) = line.strip_prefix("CATEGORY:").or_else(|| line.strip_prefix("Category:")) {
+            let val = val.trim();
+            if val != "N/A" && !val.is_empty() { data.categoria = Some(val.to_string()); }
+        }
+    }
 
-    let data: ReceiptData = serde_json::from_str(json_str)
-        .map_err(|e| AppError::Validation(format!("Impossibile parsare la risposta: {e}. Risposta raw: {json_str}")))?;
+    // Fallback: try to find any number if amount still missing
+    if data.importo.is_none() {
+        let re = regex::Regex::new(r"(?:total|totale|importo)[^\d]*(\d+[.,]\d{1,2})").ok();
+        if let Some(re) = re {
+            if let Some(cap) = re.captures(&text.to_lowercase()) {
+                if let Ok(f) = cap[1].replace(',', ".").parse::<f64>() {
+                    data.importo = Some(f);
+                }
+            }
+        }
+    }
 
     Ok(data)
 }
