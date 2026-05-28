@@ -19,38 +19,39 @@ pub async fn read_image_base64(path: String) -> AppResult<String> {
     Ok(format!("data:{};base64,{}", mime, STANDARD.encode(&bytes)))
 }
 
+fn find_tesseract() -> Option<String> {
+    for path in ["/opt/homebrew/bin/tesseract", "/usr/local/bin/tesseract", "/usr/bin/tesseract"] {
+        if std::path::Path::new(path).exists() { return Some(path.to_string()); }
+    }
+    None
+}
+
 #[tauri::command]
 pub async fn analyze_receipt(image_path: String) -> AppResult<ReceiptData> {
-    let bytes = std::fs::read(&image_path)
-        .map_err(|e| AppError::Validation(format!("Impossibile leggere il file: {e}")))?;
-    let b64 = STANDARD.encode(&bytes);
+    let tess = find_tesseract()
+        .ok_or_else(|| AppError::Validation("Tesseract non trovato. Installa con: brew install tesseract".into()))?;
 
-    let client = reqwest::Client::new();
+    // Step 1: tesseract OCR — estrae testo grezzo (ita+eng, psm 6 = blocco testo uniforme)
+    let output = std::process::Command::new(&tess)
+        .args([image_path.as_str(), "stdout", "-l", "ita+eng", "--psm", "6", "--dpi", "150"])
+        .output()
+        .map_err(|e| AppError::Validation(format!("Errore avvio tesseract: {e}")))?;
 
-    // Step 1: moondream — OCR grezzo sull'immagine
-    let ocr_body = serde_json::json!({
-        "model": "moondream",
-        "prompt": "Read all the text visible in this receipt image. List every word and number you can see, including prices, dates, and store names. Be as complete as possible.",
-        "images": [b64],
-        "stream": false
-    });
+    let raw_text = if output.status.success() {
+        String::from_utf8_lossy(&output.stdout).trim().to_string()
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+        return Err(AppError::Validation(format!("Tesseract fallito: {stderr}")));
+    };
 
-    let ocr_resp = client
-        .post("http://localhost:11434/api/generate")
-        .json(&ocr_body)
-        .timeout(std::time::Duration::from_secs(90))
-        .send()
-        .await
-        .map_err(|e| AppError::Validation(format!("Errore Ollama moondream: {e}")))?;
-
-    let ocr_json: serde_json::Value = ocr_resp.json().await
-        .map_err(|e| AppError::Validation(format!("Risposta moondream non valida: {e}")))?;
-
-    let raw_text = ocr_json["response"].as_str().unwrap_or("").to_string();
+    if raw_text.is_empty() {
+        return Err(AppError::Validation("Nessun testo estratto dall'immagine".into()));
+    }
 
     // Step 2: qwen2.5-coder — estrae struttura dal testo grezzo
+    let client = reqwest::Client::new();
     let parse_prompt = format!(
-        "You are a receipt parser. Given this raw text extracted from a receipt, output ONLY these 4 lines (no other text):\nAMOUNT: [total amount paid as decimal number, e.g. 12.50]\nDATE: [date as YYYY-MM-DD]\nSTORE: [store or business name]\nCATEGORY: [one of: Cibo, Trasporti, Casa, Salute, Svago, Abbigliamento, Istruzione, Sport, Lavoro, Altro]\n\nIf a value is not present, write N/A.\n\nReceipt text:\n{raw_text}"
+        "You are a financial document parser. Given this raw text extracted from a receipt, invoice, or bank transaction screenshot, output ONLY these 4 lines (no other text):\nAMOUNT: [the transaction amount as positive decimal number, e.g. 9.40 — strip any minus sign or currency symbol]\nDATE: [date as YYYY-MM-DD, convert Italian month names: Gen=01 Feb=02 Mar=03 Apr=04 Mag=05 Giu=06 Lug=07 Ago=08 Set=09 Ott=10 Nov=11 Dic=12]\nSTORE: [merchant, payee, or business name]\nCATEGORY: [one of: Cibo, Trasporti, Casa, Salute, Svago, Abbigliamento, Istruzione, Sport, Lavoro, Altro]\n\nIf a value is not present, write N/A.\n\nDocument text:\n{raw_text}"
     );
 
     let parse_body = serde_json::json!({
@@ -93,12 +94,22 @@ pub async fn analyze_receipt(image_path: String) -> AppResult<ReceiptData> {
 
     // Fallback regex sull'OCR grezzo se importo ancora mancante
     if data.importo.is_none() {
-        let re = regex::Regex::new(r"(?:total[ei]?|importo|da pagare|pagato)[^\d]*(\d+[.,]\d{1,2})").ok();
-        if let Some(re) = re {
+        // Prova prima con keyword (totale/importo/pagato)
+        let re_kw = regex::Regex::new(r"(?:total[ei]?|importo|da pagare|pagato)[^\d]*(\d+[,. ]\d{1,2})").ok();
+        if let Some(re) = re_kw {
             if let Some(cap) = re.captures(&raw_text.to_lowercase()) {
-                if let Ok(f) = cap[1].replace(',', ".").parse::<f64>() {
-                    data.importo = Some(f);
-                }
+                let s = cap[1].replace([',', ' '], ".");
+                if let Ok(f) = s.parse::<f64>() { data.importo = Some(f); }
+            }
+        }
+    }
+    if data.importo.is_none() {
+        // Fallback generico: pattern -?N,NN€ o N NN€
+        let re_amt = regex::Regex::new(r"-?(\d+)[,. ](\d{2})\s*[€$]").ok();
+        if let Some(re) = re_amt {
+            if let Some(cap) = re.captures(&raw_text) {
+                let s = format!("{}.{}", &cap[1], &cap[2]);
+                if let Ok(f) = s.parse::<f64>() { data.importo = Some(f); }
             }
         }
     }
