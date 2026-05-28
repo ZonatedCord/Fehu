@@ -38,7 +38,9 @@ pub fn run() {
             commands::transactions::delete_transaction,
             commands::stats::get_dashboard_stats,
             commands::export::export_csv,
+            commands::export::export_xlsx,
             commands::import::import_xlsx,
+            commands::vision::analyze_receipt,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

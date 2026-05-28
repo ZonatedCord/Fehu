@@ -69,3 +69,11 @@ pub struct DashboardStats {
     pub monthly: Vec<MonthlySummary>,
     pub by_category: Vec<CategorySummary>,
 }
+
+#[derive(Debug, Serialize, Deserialize, Default)]
+pub struct ReceiptData {
+    pub importo: Option<f64>,
+    pub data: Option<String>,
+    pub descrizione: Option<String>,
+    pub categoria: Option<String>,
+}

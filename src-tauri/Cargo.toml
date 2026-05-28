@@ -27,4 +27,7 @@ rusqlite = { version = "0.31", features = ["bundled-full"] }
 chrono = { version = "0.4", features = ["serde"] }
 thiserror = "2"
 calamine = { version = "0.35.0", features = ["dates"] }
+reqwest = { version = "0.12", features = ["json", "multipart"] }
+base64 = "0.22"
+rust_xlsxwriter = "0.80"
 
