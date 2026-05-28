@@ -1,0 +1,25 @@
+# Rust / Tauri
+src-tauri/target/
+src-tauri/gen/
+
+# Node
+node_modules/
+dist/
+
+# Build artifacts
+*.dmg
+*.msi
+*.deb
+*.AppImage
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/settings.json
+
+# Secrets (never commit)
+.env
+*.pem
