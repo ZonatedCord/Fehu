@@ -1,27 +1,10 @@
-# Rust / Tauri
-src-tauri/target/
-src-tauri/gen/
-src-tauri/src-tauri.d.ts
-
-# Node
-node_modules/
-dist/
-.vite/
-
-# Build artifacts
-*.dmg
-*.msi
-*.deb
-*.AppImage
-
-# OS
 .DS_Store
-Thumbs.db
-
-# IDE
-.idea/
-.vscode/settings.json
-
-# Secrets (never commit)
+node_modules
+/build
+/.svelte-kit
+/package
 .env
-*.pem
+.env.*
+!.env.example
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*

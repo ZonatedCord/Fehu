@@ -1,18 +1,7 @@
-# ᚠ Fehu
+# Tauri + SvelteKit + TypeScript
 
-Local-first personal expense tracker. Zero cloud. All data stays on your device.
+This template should help get you started developing with Tauri, SvelteKit and TypeScript in Vite.
 
-Built with Tauri 2, Svelte 5, Rust, SQLite.
+## Recommended IDE Setup
 
-## Features (planned)
-- [ ] Transaction & category management
-- [ ] Dashboard with charts
-- [ ] Auto-categorization via local LLM (Ollama)
-- [ ] Telegram bot for mobile entry + receipt OCR
-
-## Dev setup
-```bash
-npm install
-npm run tauri dev
-```
-Requires: Rust 1.77+, Node 18+
+[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer).
