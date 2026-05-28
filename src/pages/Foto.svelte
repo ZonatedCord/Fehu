@@ -18,6 +18,23 @@
   let categories = $state<Category[]>([]);
   let error = $state('');
   let saving = $state(false);
+  let newCatOpen = $state(false);
+  let newCatName = $state('');
+  let newCatColor = $state('#6366f1');
+  let newCatSaving = $state(false);
+
+  async function createCategoryInline() {
+    if (!newCatName.trim()) return;
+    newCatSaving = true;
+    try {
+      const cat = await api.createCategory(newCatName.trim(), newCatColor, 'package');
+      categories = [...categories, cat].sort((a, b) => a.name.localeCompare(b.name));
+      categoriaId = cat.id;
+      newCatOpen = false;
+      newCatName = '';
+    } catch (e: any) { error = e.message ?? String(e); }
+    finally { newCatSaving = false; }
+  }
 
   let tipo = $state<'income' | 'expense'>('expense');
   let importo = $state(0);
@@ -157,12 +174,26 @@
         <label>Data<input type="date" bind:value={data} /></label>
         <label>Descrizione<input bind:value={descrizione} placeholder="es. Caffè al bar" /></label>
         <label>Categoria
-          <select bind:value={categoriaId}>
-            <option value={null}>— nessuna —</option>
-            {#each categories as cat (cat.id)}
-              <option value={cat.id}>{cat.name}</option>
-            {/each}
-          </select>
+          <div class="cat-row">
+            <select bind:value={categoriaId}>
+              <option value={null}>— nessuna —</option>
+              {#each categories as cat (cat.id)}
+                <option value={cat.id}>{cat.name}</option>
+              {/each}
+            </select>
+            <button type="button" class="btn-new-cat" onclick={() => { newCatOpen = !newCatOpen; newCatName = ''; }}>
+              {newCatOpen ? '✕' : '+ Nuova'}
+            </button>
+          </div>
+          {#if newCatOpen}
+            <div class="new-cat-inline">
+              <input bind:value={newCatName} placeholder="Nome categoria" onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); createCategoryInline(); } }} />
+              <input type="color" bind:value={newCatColor} />
+              <button type="button" class="btn-primary btn-sm" onclick={createCategoryInline} disabled={newCatSaving || !newCatName.trim()}>
+                {newCatSaving ? '…' : 'Crea'}
+              </button>
+            </div>
+          {/if}
         </label>
         <button type="submit" class="btn-primary full-width" disabled={saving}>
           {saving ? 'Salvataggio…' : 'Salva transazione'}
@@ -216,4 +247,11 @@
   .error { color: #f87171; font-size: 0.85rem; margin-bottom: 0.25rem; }
   .hint-error { color: #888; font-size: 0.8rem; }
   code { background: #1a1a2e; padding: 0.15rem 0.4rem; border-radius: 3px; }
+  .cat-row { display: flex; gap: 0.4rem; align-items: center; }
+  .cat-row select { flex: 1; }
+  .btn-new-cat { white-space: nowrap; background: #2a2a3e; border: 1px solid #3e3e5e; color: #a5b4fc; padding: 0.4rem 0.6rem; border-radius: 6px; cursor: pointer; font-size: 0.78rem; }
+  .new-cat-inline { display: flex; gap: 0.4rem; margin-top: 0.4rem; align-items: center; }
+  .new-cat-inline input:not([type="color"]) { flex: 1; }
+  .new-cat-inline input[type="color"] { width: 36px; height: 32px; padding: 0.1rem; cursor: pointer; flex-shrink: 0; }
+  .btn-sm { padding: 0.4rem 0.75rem; font-size: 0.82rem; }
 </style>

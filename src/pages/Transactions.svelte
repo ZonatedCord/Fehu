@@ -20,6 +20,25 @@
   let form = $state<TransactionInput>(emptyForm());
   let saving = $state(false);
 
+  // Inline category creation
+  let newCatOpen = $state(false);
+  let newCatName = $state('');
+  let newCatColor = $state('#6366f1');
+  let newCatSaving = $state(false);
+
+  async function createCategoryInline() {
+    if (!newCatName.trim()) return;
+    newCatSaving = true;
+    try {
+      const cat = await api.createCategory(newCatName.trim(), newCatColor, 'package');
+      categories = [...categories, cat].sort((a, b) => a.name.localeCompare(b.name));
+      form.category_id = cat.id;
+      newCatOpen = false;
+      newCatName = '';
+    } catch (e: any) { error = e.message ?? String(e); }
+    finally { newCatSaving = false; }
+  }
+
   async function load() {
     try {
       [transactions, categories] = await Promise.all([api.listTransactions(), api.listCategories()]);
@@ -122,12 +141,26 @@
     <label>Data<input type="date" bind:value={form.date} required /></label>
     <label>Descrizione<input bind:value={form.description} placeholder="es. Caffè al bar" /></label>
     <label>Categoria
-      <select bind:value={form.category_id}>
-        <option value={null}>— nessuna —</option>
-        {#each categories as cat (cat.id)}
-          <option value={cat.id}>{cat.name}</option>
-        {/each}
-      </select>
+      <div class="cat-row">
+        <select bind:value={form.category_id}>
+          <option value={null}>— nessuna —</option>
+          {#each categories as cat (cat.id)}
+            <option value={cat.id}>{cat.name}</option>
+          {/each}
+        </select>
+        <button type="button" class="btn-new-cat" onclick={() => { newCatOpen = !newCatOpen; newCatName = ''; }}>
+          {newCatOpen ? '✕' : '+ Nuova'}
+        </button>
+      </div>
+      {#if newCatOpen}
+        <div class="new-cat-inline">
+          <input bind:value={newCatName} placeholder="Nome categoria" onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); createCategoryInline(); } }} />
+          <input type="color" bind:value={newCatColor} title="Colore" />
+          <button type="button" class="btn-primary btn-sm" onclick={createCategoryInline} disabled={newCatSaving || !newCatName.trim()}>
+            {newCatSaving ? '…' : 'Crea'}
+          </button>
+        </div>
+      {/if}
     </label>
     <label>Note<textarea bind:value={form.notes} rows="2"></textarea></label>
     <div class="form-actions">
@@ -165,4 +198,12 @@
   .btn-primary { background: #6366f1; color: #fff; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
   .btn-primary:hover { background: #5254cc; }
   .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+  .cat-row { display: flex; gap: 0.4rem; align-items: center; }
+  .cat-row select { flex: 1; }
+  .btn-new-cat { white-space: nowrap; background: #2a2a3e; border: 1px solid #3e3e5e; color: #a5b4fc; padding: 0.4rem 0.6rem; border-radius: 6px; cursor: pointer; font-size: 0.78rem; }
+  .btn-new-cat:hover { background: #3a3a5e; }
+  .new-cat-inline { display: flex; gap: 0.4rem; margin-top: 0.4rem; align-items: center; }
+  .new-cat-inline input[type="text"], .new-cat-inline input:not([type="color"]) { flex: 1; }
+  .new-cat-inline input[type="color"] { width: 36px; height: 32px; padding: 0.1rem; cursor: pointer; flex-shrink: 0; }
+  .btn-sm { padding: 0.4rem 0.75rem; font-size: 0.82rem; }
 </style>
