@@ -32,21 +32,21 @@
       const a = document.createElement('a');
       a.href = url; a.download = `fehu-${new Date().toISOString().slice(0,10)}.csv`; a.click();
       URL.revokeObjectURL(url);
-      success = 'Downloaded.';
+      success = 'Scaricato.';
     } catch (e: any) { error = e.message ?? String(e); }
     finally { exporting = false; }
   }
 </script>
 
 <div class="page">
-  <h1>Data</h1>
+  <h1>Dati</h1>
 
   <section>
-    <h2>Import work log (.xlsx)</h2>
-    <p class="hint">Reads "Registro Lavoro" sheet. Columns: Data, Lavoro, Tipo, Incasso €, Pagato.</p>
+    <h2>Importa registro lavoro (.xlsx)</h2>
+    <p class="hint">Legge il foglio "Registro Lavoro". Colonne: Data, Lavoro, Tipo, Incasso €, Pagato.</p>
     <button class="btn-secondary" onclick={doImport} disabled={importing}>
       <Upload size={14} />
-      {importing ? 'Importing…' : 'Choose .xlsx file'}
+      {importing ? 'Importazione…' : 'Scegli file .xlsx'}
     </button>
     {#if importResult}<p class="success">{importResult}</p>{/if}
   </section>
@@ -54,14 +54,14 @@
   <hr />
 
   <section>
-    <h2>Export CSV</h2>
-    <p class="hint">Leave dates empty to export all transactions.</p>
+    <h2>Esporta CSV</h2>
+    <p class="hint">Lascia le date vuote per esportare tutto.</p>
     <form onsubmit={(e) => { e.preventDefault(); doExport(); }}>
-      <label>From<input type="date" bind:value={startDate} /></label>
-      <label>To<input type="date" bind:value={endDate} /></label>
+      <label>Dal<input type="date" bind:value={startDate} /></label>
+      <label>Al<input type="date" bind:value={endDate} /></label>
       <button type="submit" class="btn-primary" disabled={exporting}>
         <Download size={14} />
-        {exporting ? 'Exporting…' : 'Export CSV'}
+        {exporting ? 'Esportazione…' : 'Esporta CSV'}
       </button>
     </form>
     {#if success}<p class="success">{success}</p>{/if}

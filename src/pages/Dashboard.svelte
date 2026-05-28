@@ -32,8 +32,8 @@
         data: {
           labels: stats.monthly.map(m => m.month),
           datasets: [
-            { label: 'Income', data: stats.monthly.map(m => m.income), backgroundColor: '#4ade8066', borderColor: '#4ade80', borderWidth: 1 },
-            { label: 'Expense', data: stats.monthly.map(m => m.expense), backgroundColor: '#f8717166', borderColor: '#f87171', borderWidth: 1 },
+            { label: 'Entrate', data: stats.monthly.map(m => m.income), backgroundColor: '#4ade8066', borderColor: '#4ade80', borderWidth: 1 },
+            { label: 'Uscite', data: stats.monthly.map(m => m.expense), backgroundColor: '#f8717166', borderColor: '#f87171', borderWidth: 1 },
           ],
         },
         options: {
@@ -69,29 +69,29 @@
 <div class="page">
   <div class="page-header">
     <h1>Dashboard</h1>
-    <button class="btn-refresh" onclick={load}>↻ Refresh</button>
+    <button class="btn-refresh" onclick={load}>↻ Aggiorna</button>
   </div>
   {#if error}<p class="error">{error}</p>{/if}
   {#if stats}
     <div class="kpi-row">
-      <div class="kpi income"><span class="kpi-label">Total Income</span><span class="kpi-value">{fmt(stats.total_income)}</span></div>
-      <div class="kpi expense"><span class="kpi-label">Total Expense</span><span class="kpi-value">{fmt(stats.total_expense)}</span></div>
-      <div class="kpi balance"><span class="kpi-label">Balance</span><span class="kpi-value">{fmt(stats.total_income - stats.total_expense)}</span></div>
+      <div class="kpi income"><span class="kpi-label">Entrate totali</span><span class="kpi-value">{fmt(stats.total_income)}</span></div>
+      <div class="kpi expense"><span class="kpi-label">Uscite totali</span><span class="kpi-value">{fmt(stats.total_expense)}</span></div>
+      <div class="kpi balance"><span class="kpi-label">Saldo</span><span class="kpi-value">{fmt(stats.total_income - stats.total_expense)}</span></div>
     </div>
     <div class="charts-row">
       <div class="chart-card wide">
-        <h2>Monthly Income vs Expense</h2>
-        {#if stats.monthly.length === 0}<p class="muted">Add transactions to see data</p>
+        <h2>Entrate vs Uscite mensili</h2>
+        {#if stats.monthly.length === 0}<p class="muted">Aggiungi transazioni per vedere i dati</p>
         {:else}<canvas bind:this={monthlyCanvas}></canvas>{/if}
       </div>
       <div class="chart-card">
-        <h2>Expenses by Category</h2>
-        {#if stats.by_category.length === 0}<p class="muted">No expense data</p>
+        <h2>Uscite per categoria</h2>
+        {#if stats.by_category.length === 0}<p class="muted">Nessuna uscita</p>
         {:else}<canvas bind:this={categoryCanvas}></canvas>{/if}
       </div>
     </div>
   {:else if !error}
-    <p class="muted">Loading…</p>
+    <p class="muted">Caricamento…</p>
   {/if}
 </div>
 
