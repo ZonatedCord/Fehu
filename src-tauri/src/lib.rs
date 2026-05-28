@@ -23,7 +23,7 @@ pub fn run() {
                 .join("fehu.db");
             std::fs::create_dir_all(db_path.parent().unwrap())?;
             let conn = db::open(db_path.to_str().unwrap())
-                .expect("failed to open database");
+                .map_err(|e| format!("Failed to open database: {}", e))?;
             app.manage(AppState { db: Db(std::sync::Mutex::new(conn)) });
             Ok(())
         })
