@@ -51,7 +51,13 @@ pub async fn analyze_receipt(image_path: String) -> AppResult<ReceiptData> {
     // Step 2: qwen2.5-coder — estrae struttura dal testo grezzo
     let client = reqwest::Client::new();
     let parse_prompt = format!(
-        "You are a financial document parser. Given this raw text extracted from a receipt, invoice, or bank transaction screenshot, output ONLY these 4 lines (no other text):\nAMOUNT: [the transaction amount as positive decimal number, e.g. 9.40 — strip any minus sign or currency symbol]\nDATE: [date as YYYY-MM-DD, convert Italian month names: Gen=01 Feb=02 Mar=03 Apr=04 Mag=05 Giu=06 Lug=07 Ago=08 Set=09 Ott=10 Nov=11 Dic=12]\nSTORE: [merchant, payee, or business name]\nCATEGORY: [one of: Cibo, Trasporti, Casa, Salute, Svago, Abbigliamento, Istruzione, Sport, Lavoro, Altro]\n\nIf a value is not present, write N/A.\n\nDocument text:\n{raw_text}"
+        "You are a financial document parser for an Italian expense tracker. Extract data from this text and output ONLY these 4 lines:\n\
+AMOUNT: [positive decimal number, e.g. 9.40 — strip minus sign and currency symbols]\n\
+DATE: [YYYY-MM-DD — convert Italian months: Gen=01 Feb=02 Mar=03 Apr=04 Mag=05 Giu=06 Lug=07 Ago=08 Set=09 Ott=10 Nov=11 Dic=12]\n\
+STORE: [merchant or payee name]\n\
+CATEGORY: [pick ONE: Cibo=supermarkets/restaurants/food; Trasporti=fuel/transport/tolls/flights; Casa=utilities/rent/furniture/home; Salute=pharmacy/doctors/medical; Svago=streaming/cinema/games/entertainment; Abbigliamento=clothing/shoes/fashion; Istruzione=courses/books/education; Sport=gym/sports; Lavoro=hosting/software/cloud/professional-services/PayPal-for-services/Cloudflare/AWS/Adobe; Altro=anything-else]\n\n\
+If a value is not found write N/A.\n\n\
+Text:\n{raw_text}"
     );
 
     let parse_body = serde_json::json!({
