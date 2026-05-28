@@ -11,6 +11,7 @@ pub struct TransactionInput {
     pub date: String,
     pub description: String,
     pub notes: String,
+    pub metodo: String,
 }
 
 #[tauri::command]
@@ -23,7 +24,7 @@ pub fn list_transactions(
     let conn = state.db.0.lock().unwrap();
     let mut stmt = conn.prepare(
         "SELECT t.id, t.amount, t.type, t.category_id, c.name,
-                t.date, t.description, t.notes, t.source, t.created_at
+                t.date, t.description, t.notes, t.source, t.metodo, t.created_at
          FROM transactions t
          LEFT JOIN categories c ON c.id = t.category_id
          WHERE (?1 IS NULL OR t.date >= ?1)
@@ -45,14 +46,14 @@ pub fn create_transaction(state: State<AppState>, input: TransactionInput) -> Ap
     }
     let conn = state.db.0.lock().unwrap();
     conn.execute(
-        "INSERT INTO transactions (amount,type,category_id,date,description,notes)
-         VALUES (?1,?2,?3,?4,?5,?6)",
-        params![input.amount, input.tx_type, input.category_id, input.date, input.description, input.notes],
+        "INSERT INTO transactions (amount,type,category_id,date,description,notes,metodo)
+         VALUES (?1,?2,?3,?4,?5,?6,?7)",
+        params![input.amount, input.tx_type, input.category_id, input.date, input.description, input.notes, input.metodo],
     )?;
     let id = conn.last_insert_rowid();
     let tx = conn.query_row(
         "SELECT t.id,t.amount,t.type,t.category_id,c.name,
-                t.date,t.description,t.notes,t.source,t.created_at
+                t.date,t.description,t.notes,t.source,t.metodo,t.created_at
          FROM transactions t LEFT JOIN categories c ON c.id=t.category_id
          WHERE t.id=?1",
         params![id],
@@ -71,8 +72,8 @@ pub fn update_transaction(state: State<AppState>, id: i64, input: TransactionInp
     }
     let conn = state.db.0.lock().unwrap();
     let rows = conn.execute(
-        "UPDATE transactions SET amount=?1,type=?2,category_id=?3,date=?4,description=?5,notes=?6 WHERE id=?7",
-        params![input.amount, input.tx_type, input.category_id, input.date, input.description, input.notes, id],
+        "UPDATE transactions SET amount=?1,type=?2,category_id=?3,date=?4,description=?5,notes=?6,metodo=?7 WHERE id=?8",
+        params![input.amount, input.tx_type, input.category_id, input.date, input.description, input.notes, input.metodo, id],
     )?;
     if rows == 0 { return Err(AppError::NotFound); }
     Ok(())

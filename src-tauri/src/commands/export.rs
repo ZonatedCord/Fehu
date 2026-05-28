@@ -20,7 +20,7 @@ pub fn export_csv(
     let conn = state.db.0.lock().unwrap();
     let mut stmt = conn.prepare(
         "SELECT t.id,t.amount,t.type,t.category_id,c.name,
-                t.date,t.description,t.notes,t.source,t.created_at
+                t.date,t.description,t.notes,t.source,t.metodo,t.created_at
          FROM transactions t LEFT JOIN categories c ON c.id=t.category_id
          WHERE (?1 IS NULL OR t.date >= ?1) AND (?2 IS NULL OR t.date <= ?2)
          ORDER BY t.date DESC",
@@ -29,10 +29,10 @@ pub fn export_csv(
         .query_map(params![start_date, end_date], Transaction::from_row)?
         .collect::<rusqlite::Result<_>>()?;
 
-    let mut csv = String::from("id,amount,type,category_id,category_name,date,description,notes,source,created_at\n");
+    let mut csv = String::from("id,amount,type,category_id,category_name,date,description,notes,source,metodo,created_at\n");
     for t in rows {
         csv.push_str(&format!(
-            "{},{},{},{},{},{},{},{},{},{}\n",
+            "{},{},{},{},{},{},{},{},{},{},{}\n",
             t.id,
             t.amount,
             t.tx_type,
@@ -42,6 +42,7 @@ pub fn export_csv(
             csv_field(&t.description),
             csv_field(&t.notes),
             csv_field(&t.source),
+            csv_field(&t.metodo),
             t.created_at,
         ));
     }
@@ -58,7 +59,7 @@ pub fn export_xlsx(
     let conn = state.db.0.lock().unwrap();
     let mut stmt = conn.prepare(
         "SELECT t.id,t.amount,t.type,t.category_id,c.name,
-                t.date,t.description,t.notes,t.source,t.created_at
+                t.date,t.description,t.notes,t.source,t.metodo,t.created_at
          FROM transactions t LEFT JOIN categories c ON c.id=t.category_id
          WHERE (?1 IS NULL OR t.date >= ?1) AND (?2 IS NULL OR t.date <= ?2)
          ORDER BY t.date DESC",
@@ -77,7 +78,7 @@ pub fn export_xlsx(
         .set_background_color(Color::RGB(0x6366f1))
         .set_font_color(Color::White);
 
-    let headers = ["ID", "Data", "Tipo", "Importo (€)", "Categoria", "Descrizione", "Note", "Fonte", "Creato il"];
+    let headers = ["ID", "Data", "Tipo", "Importo (€)", "Categoria", "Descrizione", "Note", "Fonte", "Metodo", "Creato il"];
     for (col, h) in headers.iter().enumerate() {
         ws.write_with_format(0, col as u16, *h, &header_fmt)
             .map_err(|e| AppError::Validation(format!("Errore scrittura intestazione: {e}")))?;
@@ -101,7 +102,8 @@ pub fn export_xlsx(
         ws.write(row, 5, &t.description).ok();
         ws.write(row, 6, &t.notes).ok();
         ws.write(row, 7, &t.source).ok();
-        ws.write(row, 8, &t.created_at).ok();
+        ws.write(row, 8, &t.metodo).ok();
+        ws.write(row, 9, &t.created_at).ok();
     }
 
     // Auto-width columns

@@ -42,6 +42,10 @@ pub fn run() {
             commands::import::import_xlsx,
             commands::vision::analyze_receipt,
             commands::vision::read_image_base64,
+            commands::goals::list_goals,
+            commands::goals::create_goal,
+            commands::goals::update_goal_saved,
+            commands::goals::delete_goal,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

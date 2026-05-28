@@ -43,7 +43,19 @@ fn migrate(conn: &Connection) -> SqlResult<()> {
 
         CREATE INDEX IF NOT EXISTS idx_tx_date        ON transactions(date);
         CREATE INDEX IF NOT EXISTS idx_tx_category_id ON transactions(category_id);
+
+        CREATE TABLE IF NOT EXISTS goals (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            name       TEXT    NOT NULL,
+            target     REAL    NOT NULL,
+            saved      REAL    NOT NULL DEFAULT 0,
+            color      TEXT    NOT NULL DEFAULT '#6366f1',
+            icon       TEXT    NOT NULL DEFAULT 'piggy-bank',
+            created_at TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+        );
     ")?;
+    // Add metodo column if not exists (idempotent)
+    let _ = conn.execute("ALTER TABLE transactions ADD COLUMN metodo TEXT NOT NULL DEFAULT 'carta'", []);
     Ok(())
 }
 

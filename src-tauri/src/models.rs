@@ -27,6 +27,7 @@ pub struct Transaction {
     pub description: String,
     pub notes: String,
     pub source: String,
+    pub metodo: String,
     pub created_at: String,
 }
 
@@ -42,9 +43,21 @@ impl Transaction {
             description: row.get(6)?,
             notes: row.get(7)?,
             source: row.get(8)?,
-            created_at: row.get(9)?,
+            metodo: row.get(9)?,
+            created_at: row.get(10)?,
         })
     }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Goal {
+    pub id: i64,
+    pub name: String,
+    pub target: f64,
+    pub saved: f64,
+    pub color: String,
+    pub icon: String,
+    pub created_at: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

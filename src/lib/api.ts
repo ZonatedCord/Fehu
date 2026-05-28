@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Category, DashboardStats, Transaction, TransactionInput } from './types';
+import type { Category, DashboardStats, Goal, Transaction, TransactionInput } from './types';
 
 export const api = {
   listCategories: () => invoke<Category[]>('list_categories'),
@@ -23,4 +23,11 @@ export const api = {
     invoke<string>('export_csv', filters ?? {}),
   exportXlsx: (filePath: string, filters?: { start_date?: string; end_date?: string }) =>
     invoke<void>('export_xlsx', { filePath, ...filters }),
+
+  listGoals: () => invoke<Goal[]>('list_goals'),
+  createGoal: (name: string, target: number, color: string) =>
+    invoke<Goal>('create_goal', { name, target, color }),
+  updateGoalSaved: (id: number, saved: number) =>
+    invoke<void>('update_goal_saved', { id, saved }),
+  deleteGoal: (id: number) => invoke<void>('delete_goal', { id }),
 };

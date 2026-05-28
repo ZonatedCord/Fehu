@@ -17,6 +17,7 @@ export interface Transaction {
   description: string;
   notes: string;
   source: string;
+  metodo: string;
   created_at: string;
 }
 
@@ -27,6 +28,7 @@ export interface TransactionInput {
   date: string;
   description: string;
   notes: string;
+  metodo: string;
 }
 
 export interface MonthlySummary {
@@ -56,4 +58,14 @@ export interface ReceiptData {
   categoria: string | null;
 }
 
-export type Page = 'dashboard' | 'transactions' | 'categories' | 'export' | 'foto';
+export interface Goal {
+  id: number;
+  name: string;
+  target: number;
+  saved: number;
+  color: string;
+  icon: string;
+  created_at: string;
+}
+
+export type Page = 'dashboard' | 'transactions' | 'categories' | 'export' | 'foto' | 'obiettivi';

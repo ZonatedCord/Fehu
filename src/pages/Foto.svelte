@@ -23,6 +23,7 @@
   let newCatSaving = $state(false);
 
   let tipo = $state<'income' | 'expense'>('expense');
+  let metodo = $state('contanti');
   let importo = $state(0);
   let data = $state('');
   let descrizione = $state('');
@@ -95,10 +96,10 @@
       await api.createTransaction({
         amount: importo, type: tipo, category_id: categoriaId,
         date: data || new Date().toISOString().slice(0, 10),
-        description: descrizione, notes: '',
+        description: descrizione, notes: '', metodo,
       });
       imagePath = ''; previewUrl = ''; receipt = null;
-      importo = 0; data = ''; descrizione = ''; categoriaId = null;
+      importo = 0; data = ''; descrizione = ''; categoriaId = null; metodo = 'contanti';
       currentPage.set('transactions');
     } catch (e: any) { error = e.message ?? String(e); }
     finally { saving = false; }
@@ -195,6 +196,13 @@
                   </button>
                 </div>
               {/if}
+            </label>
+            <label>Metodo
+              <select bind:value={metodo}>
+                <option value="contanti">Contanti</option>
+                <option value="carta">Carta</option>
+                <option value="altro">Altro</option>
+              </select>
             </label>
             <button type="submit" class="btn-primary full-width" disabled={saving}>
               {saving ? 'Salvataggio…' : 'Salva transazione'}

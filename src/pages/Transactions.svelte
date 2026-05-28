@@ -63,7 +63,7 @@
 
   const emptyForm = (): TransactionInput => ({
     amount: 0, type: 'expense', category_id: null,
-    date: format(new Date(), 'yyyy-MM-dd'), description: '', notes: '',
+    date: format(new Date(), 'yyyy-MM-dd'), description: '', notes: '', metodo: 'carta',
   });
   let form = $state<TransactionInput>(emptyForm());
   let saving = $state(false);
@@ -106,7 +106,7 @@
   }
   function openEdit(tx: Transaction) {
     editing = tx;
-    form = { amount: tx.amount, type: tx.type, category_id: tx.category_id, date: tx.date, description: tx.description, notes: tx.notes };
+    form = { amount: tx.amount, type: tx.type, category_id: tx.category_id, date: tx.date, description: tx.description, notes: tx.notes, metodo: tx.metodo ?? 'carta' };
     modalOpen = true;
   }
 
@@ -167,13 +167,18 @@
     </div>
     {#if error}<p class="error">{error}</p>{/if}
     <table>
-      <thead><tr><th>Data</th><th>Descrizione</th><th>Categoria</th><th>Importo</th><th></th></tr></thead>
+      <thead><tr><th>Data</th><th>Descrizione</th><th>Categoria</th><th>Metodo</th><th>Importo</th><th></th></tr></thead>
       <tbody>
         {#each filtered as tx (tx.id)}
           <tr>
             <td class="date">{formatDate(tx.date)}</td>
             <td>{tx.description || '—'}</td>
             <td>{#if tx.category_name}<span class="tag">{tx.category_name}</span>{:else}<span class="muted">—</span>{/if}</td>
+            <td class="metodo">
+              {#if tx.metodo === 'contanti'}<span class="badge cash">C</span>
+              {:else if tx.metodo === 'carta'}<span class="badge card">K</span>
+              {:else}<span class="badge other">?</span>{/if}
+            </td>
             <td class="amount" class:income={tx.type === 'income'} class:expense={tx.type === 'expense'}>
               {tx.type === 'income' ? '+' : '-'}{fmt(tx.amount)}
             </td>
@@ -184,7 +189,7 @@
           </tr>
         {/each}
         {#if filtered.length === 0}
-          <tr><td colspan="5" class="empty">Nessuna transazione</td></tr>
+          <tr><td colspan="6" class="empty">Nessuna transazione</td></tr>
         {/if}
       </tbody>
     </table>
@@ -264,6 +269,13 @@
         <option value="income">Entrata</option>
       </select>
     </label>
+    <label>Metodo
+      <select bind:value={form.metodo}>
+        <option value="carta">Carta</option>
+        <option value="contanti">Contanti</option>
+        <option value="altro">Altro</option>
+      </select>
+    </label>
     <label>Importo (€)<input type="number" bind:value={form.amount} min="0.01" step="0.01" required /></label>
     <label>Data<input type="date" bind:value={form.date} required /></label>
     <label>Descrizione<input bind:value={form.description} placeholder="es. Caffè al bar" /></label>
@@ -322,6 +334,11 @@
   .row-actions .danger { color: #f87171; }
   .empty { text-align: center; color: #555; padding: 2rem; }
   .error { color: #f87171; }
+  .metodo { text-align: center; }
+  .badge { display: inline-block; width: 18px; height: 18px; border-radius: 3px; font-size: 0.65rem; font-weight: 700; line-height: 18px; text-align: center; }
+  .badge.cash { background: #166534; color: #4ade80; }
+  .badge.card { background: #1e1b4b; color: #818cf8; }
+  .badge.other { background: #2a2a3e; color: #888; }
 
   /* Calendar */
   .cal-nav { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem; }
