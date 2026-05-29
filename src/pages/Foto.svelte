@@ -163,7 +163,11 @@
         <div class="form-section">
           <h2>
             {#if analyzing}Estrazione in corso…
-            {:else if receipt}Dati estratti — verifica e salva
+            {:else if receipt}
+              Dati estratti — verifica e salva
+              {#if receipt.categoria_source === 'keyword'}
+                <span class="badge-offline">categoria stimata (offline)</span>
+              {/if}
             {:else}Compila o premi Analizza{/if}
           </h2>
 
@@ -231,7 +235,8 @@
   .page { max-width: 960px; }
   .page-header { margin-bottom: 1.25rem; }
   h1 { margin: 0 0 0.2rem; font-size: 1.5rem; }
-  h2 { margin: 0 0 1rem; font-size: 0.95rem; color: #aaa; font-weight: 500; }
+  h2 { margin: 0 0 1rem; font-size: 0.95rem; color: #aaa; font-weight: 500; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .badge-offline { font-size: 0.72rem; background: #1a1a2e; border: 1px solid #2e2e4e; color: #555; padding: 0.1rem 0.45rem; border-radius: 4px; font-weight: 400; }
   .hint { color: #666; font-size: 0.85rem; margin: 0; }
 
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start; }

@@ -51,6 +51,12 @@ pub fn run() {
             commands::patrimonio::list_balance_adjustments,
             commands::patrimonio::create_balance_adjustment,
             commands::patrimonio::delete_balance_adjustment,
+            commands::settings::get_settings,
+            commands::settings::set_setting,
+            commands::check::check_dependencies,
+            commands::files::attach_file,
+            commands::files::list_attachments,
+            commands::files::delete_attachment,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

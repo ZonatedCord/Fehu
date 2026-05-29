@@ -1,21 +1,40 @@
 <script lang="ts">
-  import { LayoutDashboard, ArrowUpDown, Tag, Database, Camera, PiggyBank } from '@lucide/svelte';
+  import {
+    LayoutDashboard, ArrowUpDown, Tag, Database, Camera, PiggyBank,
+    Settings, Info, Calculator,
+  } from '@lucide/svelte';
   import { currentPage } from '../lib/stores';
   import type { Page } from '../lib/types';
 
-  const nav: { label: string; page: Page; icon: typeof LayoutDashboard }[] = [
+  const mainNav: { label: string; page: Page; icon: typeof LayoutDashboard }[] = [
     { label: 'Dashboard',    page: 'dashboard',    icon: LayoutDashboard },
-    { label: 'Transazioni', page: 'transactions', icon: ArrowUpDown },
-    { label: 'Categorie',   page: 'categories',   icon: Tag },
+    { label: 'Transazioni',  page: 'transactions', icon: ArrowUpDown },
+    { label: 'Categorie',    page: 'categories',   icon: Tag },
     { label: 'Dati',         page: 'export',       icon: Database },
     { label: 'Foto',         page: 'foto',         icon: Camera },
     { label: 'Obiettivi',    page: 'obiettivi',    icon: PiggyBank },
+    { label: 'P.IVA',        page: 'piva',         icon: Calculator },
+  ];
+
+  const utilityNav: { label: string; page: Page; icon: typeof LayoutDashboard }[] = [
+    { label: 'Impostazioni', page: 'settings', icon: Settings },
+    { label: 'About',        page: 'about',    icon: Info },
   ];
 </script>
 
 <nav class="sidebar">
   <div class="logo">ᚠ fehu</div>
-  {#each nav as item}
+
+  {#each mainNav as item}
+    <button class:active={$currentPage === item.page} onclick={() => currentPage.set(item.page)}>
+      <svelte:component this={item.icon} size={16} />
+      {item.label}
+    </button>
+  {/each}
+
+  <div class="separator"></div>
+
+  {#each utilityNav as item}
     <button class:active={$currentPage === item.page} onclick={() => currentPage.set(item.page)}>
       <svelte:component this={item.icon} size={16} />
       {item.label}
@@ -45,4 +64,9 @@
   }
   button:hover { background: #1e1e2e; }
   button.active { background: #1e1e2e; color: #a5b4fc; }
+  .separator {
+    margin: 0.5rem 0.5rem;
+    border-top: 1px solid #1e1e2e;
+    flex-shrink: 0;
+  }
 </style>

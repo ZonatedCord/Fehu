@@ -89,6 +89,7 @@ pub struct ReceiptData {
     pub data: Option<String>,
     pub descrizione: Option<String>,
     pub categoria: Option<String>,
+    pub categoria_source: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -98,6 +99,15 @@ pub struct BalanceAdjustment {
     pub amount: f64,
     pub note: String,
     pub date: String,
+    pub created_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TransactionFile {
+    pub id: i64,
+    pub transaction_id: i64,
+    pub file_name: String,
+    pub file_path: String,
     pub created_at: String,
 }
 

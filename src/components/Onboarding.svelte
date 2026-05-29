@@ -1,0 +1,185 @@
+<script lang="ts">
+  import { CheckCircle, XCircle, Circle } from '@lucide/svelte';
+  import { api } from '../lib/api';
+  import type { DepsStatus } from '../lib/types';
+
+  let { onComplete }: { onComplete: () => void } = $props();
+
+  let step = $state(1);
+  let deps = $state<DepsStatus | null>(null);
+  let checking = $state(false);
+
+  async function goToStep2() {
+    step = 2;
+    checking = true;
+    try {
+      deps = await api.checkDependencies();
+    } catch {
+      deps = { tesseract: false, ollama: false, tesseract_version: null };
+    } finally {
+      checking = false;
+    }
+  }
+
+  async function complete() {
+    try {
+      await api.setSetting('onboarded', 'true');
+    } catch {}
+    onComplete();
+  }
+</script>
+
+<div class="overlay">
+  <div class="card">
+    <!-- Step indicator -->
+    <div class="steps">
+      {#each [1, 2, 3] as s}
+        <div class="step-dot" class:active={step === s} class:done={step > s}></div>
+      {/each}
+    </div>
+
+    {#if step === 1}
+      <div class="rune">ᚠ</div>
+      <h1>Benvenuto in Fehu</h1>
+      <p class="body">
+        Fehu è un tracker finanziario personale che gira interamente sul tuo dispositivo.
+        Nessun dato viene inviato a server esterni — tutto rimane locale.
+      </p>
+      <ul class="feature-list">
+        <li>Tieni traccia di entrate e uscite</li>
+        <li>Analisi scontrini con OCR locale (Tesseract)</li>
+        <li>Categorizzazione con LLM locale (Ollama — opzionale)</li>
+        <li>Obiettivi di risparmio e gestione patrimonio</li>
+        <li>Calcolatore P.IVA per freelancer italiani</li>
+      </ul>
+      <button class="btn-primary" onclick={goToStep2}>Inizia setup →</button>
+
+    {:else if step === 2}
+      <h1>Controllo dipendenze</h1>
+      <p class="body">Fehu usa strumenti locali per OCR e categorizzazione. Entrambi sono opzionali.</p>
+
+      {#if checking}
+        <div class="dep-row">
+          <Circle size={20} class="checking" />
+          <span>Verifica in corso…</span>
+        </div>
+      {:else if deps}
+        <div class="deps">
+          <div class="dep-row">
+            {#if deps.tesseract}
+              <CheckCircle size={20} color="#4ade80" />
+              <div>
+                <span class="dep-name">Tesseract OCR</span>
+                {#if deps.tesseract_version}
+                  <span class="dep-version">{deps.tesseract_version}</span>
+                {/if}
+              </div>
+            {:else}
+              <XCircle size={20} color="#f87171" />
+              <div>
+                <span class="dep-name">Tesseract OCR — non trovato</span>
+                <code class="install-cmd">brew install tesseract tesseract-lang</code>
+              </div>
+            {/if}
+          </div>
+
+          <div class="dep-row">
+            {#if deps.ollama}
+              <CheckCircle size={20} color="#4ade80" />
+              <span class="dep-name">Ollama — in esecuzione</span>
+            {:else}
+              <XCircle size={20} color="#f87171" />
+              <div>
+                <span class="dep-name">Ollama — non trovato (opzionale)</span>
+                <span class="dep-hint">Senza Ollama, la categoria viene stimata da parole chiave.</span>
+              </div>
+            {/if}
+          </div>
+        </div>
+      {/if}
+
+      <div class="row">
+        <button class="btn-ghost" onclick={() => { step = 1; }}>← Indietro</button>
+        <button class="btn-primary" onclick={() => { step = 3; }} disabled={checking}>
+          Continua →
+        </button>
+      </div>
+
+    {:else}
+      <div class="rune success">✓</div>
+      <h1>Tutto pronto</h1>
+      <p class="body">
+        Puoi iniziare ad usare Fehu. Se Tesseract o Ollama non erano presenti,
+        puoi installarli in qualsiasi momento e riprendere a usare le funzionalità di analisi.
+      </p>
+      <p class="body-small">
+        Vai in <strong>Impostazioni</strong> per personalizzare l'URL di Ollama,
+        il percorso di Tesseract e il simbolo di valuta.
+      </p>
+      <button class="btn-primary" onclick={complete}>Apri Fehu</button>
+    {/if}
+  </div>
+</div>
+
+<style>
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100; backdrop-filter: blur(4px);
+  }
+  .card {
+    background: #1a1a2e; border: 1px solid #2e2e4e;
+    border-radius: 14px; padding: 2.5rem 2rem;
+    width: 100%; max-width: 480px;
+    display: flex; flex-direction: column; gap: 1.25rem;
+  }
+
+  .steps { display: flex; gap: 0.4rem; }
+  .step-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #2e2e4e; transition: background 0.2s;
+  }
+  .step-dot.active { background: #6366f1; }
+  .step-dot.done { background: #4ade80; }
+
+  .rune { font-size: 2.5rem; color: #a5b4fc; }
+  .rune.success { color: #4ade80; }
+  h1 { margin: 0; font-size: 1.4rem; }
+  .body { margin: 0; color: #888; font-size: 0.9rem; line-height: 1.6; }
+  .body-small { margin: 0; color: #666; font-size: 0.82rem; line-height: 1.6; }
+
+  .feature-list {
+    margin: 0; padding: 0 0 0 1.2rem;
+    color: #888; font-size: 0.875rem;
+    display: flex; flex-direction: column; gap: 0.35rem;
+  }
+
+  .deps { display: flex; flex-direction: column; gap: 1rem; }
+  .dep-row {
+    display: flex; align-items: flex-start; gap: 0.75rem;
+    font-size: 0.875rem;
+  }
+  .dep-name { color: #ccc; display: block; }
+  .dep-version { color: #555; font-size: 0.78rem; display: block; margin-top: 0.15rem; }
+  .dep-hint { color: #555; font-size: 0.78rem; display: block; margin-top: 0.15rem; }
+  .install-cmd {
+    display: block; margin-top: 0.25rem;
+    background: #0f0f1a; color: #a5b4fc;
+    padding: 0.2rem 0.5rem; border-radius: 4px;
+    font-size: 0.8rem; font-family: monospace;
+  }
+
+  .row { display: flex; gap: 0.75rem; justify-content: flex-end; }
+  .btn-primary {
+    background: #6366f1; color: #fff; border: none;
+    padding: 0.65rem 1.4rem; border-radius: 7px;
+    cursor: pointer; font-size: 0.9rem;
+  }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-ghost {
+    background: none; border: 1px solid #2e2e4e; color: #666;
+    padding: 0.65rem 1rem; border-radius: 7px; cursor: pointer; font-size: 0.9rem;
+  }
+  .btn-ghost:hover { color: #aaa; }
+</style>

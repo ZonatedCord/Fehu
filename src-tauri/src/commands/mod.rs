@@ -1,8 +1,11 @@
 pub mod categories;
+pub mod check;
 pub mod export;
+pub mod files;
 pub mod goals;
 pub mod import;
 pub mod patrimonio;
+pub mod settings;
 pub mod stats;
 pub mod transactions;
 pub mod vision;

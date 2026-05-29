@@ -2,8 +2,11 @@
   import { onMount } from 'svelte';
   import { api } from '../lib/api';
   import Modal from '../components/Modal.svelte';
-  import type { Category, Transaction, TransactionInput } from '../lib/types';
+  import type { Category, Transaction, TransactionFile, TransactionInput } from '../lib/types';
   import { format } from 'date-fns';
+  import { open } from '@tauri-apps/plugin-dialog';
+  import { openPath } from '@tauri-apps/plugin-opener';
+  import { Paperclip } from '@lucide/svelte';
 
   let transactions = $state<Transaction[]>([]);
   let categories = $state<Category[]>([]);
@@ -67,6 +70,44 @@
   });
   let form = $state<TransactionInput>(emptyForm());
   let saving = $state(false);
+
+  // Attachments
+  let attachments = $state<TransactionFile[]>([]);
+  let attachLoading = $state(false);
+
+  $effect(() => {
+    if (editing) {
+      attachLoading = true;
+      api.listAttachments(editing.id)
+        .then(a => { attachments = a; })
+        .catch(() => { attachments = []; })
+        .finally(() => { attachLoading = false; });
+    } else {
+      attachments = [];
+    }
+  });
+
+  async function addAttachment() {
+    if (!editing) return;
+    const path = await open({ multiple: false }).catch(() => null);
+    if (path && typeof path === 'string') {
+      try {
+        const att = await api.attachFile(editing.id, path);
+        attachments = [...attachments, att];
+      } catch (e: any) { error = e.message ?? String(e); }
+    }
+  }
+
+  async function removeAttachment(id: number) {
+    try {
+      await api.deleteAttachment(id);
+      attachments = attachments.filter(a => a.id !== id);
+    } catch (e: any) { error = e.message ?? String(e); }
+  }
+
+  async function openAttachmentFile(path: string) {
+    try { await openPath(path); } catch {}
+  }
 
   // Inline category creation
   let newCatOpen = $state(false);
@@ -302,6 +343,31 @@
       {/if}
     </label>
     <label>Note<textarea bind:value={form.notes} rows="2"></textarea></label>
+
+    {#if editing}
+      <div class="att-section">
+        <div class="att-header">
+          <span class="att-title"><Paperclip size={13} /> Allegati</span>
+          <button type="button" class="btn-att" onclick={addAttachment}>+ Aggiungi file</button>
+        </div>
+        {#if attachLoading}
+          <p class="att-hint">Caricamento…</p>
+        {:else if attachments.length === 0}
+          <p class="att-hint">Nessun allegato — aggiungi fatture o scontrini</p>
+        {:else}
+          {#each attachments as att (att.id)}
+            <div class="att-row">
+              <span class="att-name" title={att.file_path}>{att.file_name}</span>
+              <div class="att-actions">
+                <button type="button" class="att-btn" onclick={() => openAttachmentFile(att.file_path)}>Apri</button>
+                <button type="button" class="att-btn danger" onclick={() => removeAttachment(att.id)}>✕</button>
+              </div>
+            </div>
+          {/each}
+        {/if}
+      </div>
+    {/if}
+
     <div class="form-actions">
       <button type="button" onclick={() => modalOpen = false}>Annulla</button>
       <button type="submit" class="btn-primary" disabled={saving}>{saving ? 'Salvataggio…' : 'Salva'}</button>
@@ -391,4 +457,19 @@
   .new-cat-inline input:not([type="color"]) { flex: 1; }
   .new-cat-inline input[type="color"] { width: 36px; height: 32px; padding: 0.1rem; cursor: pointer; flex-shrink: 0; }
   .btn-sm { padding: 0.4rem 0.75rem; font-size: 0.82rem; }
+
+  /* Attachments */
+  .att-section { border: 1px solid #2e2e4e; border-radius: 7px; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem; }
+  .att-header { display: flex; align-items: center; justify-content: space-between; }
+  .att-title { display: flex; align-items: center; gap: 0.35rem; font-size: 0.82rem; color: #888; }
+  .btn-att { background: #1a1a2e; border: 1px solid #2e2e4e; color: #a5b4fc; padding: 0.25rem 0.6rem; border-radius: 5px; cursor: pointer; font-size: 0.78rem; }
+  .btn-att:hover { border-color: #6366f1; }
+  .att-hint { font-size: 0.78rem; color: #555; margin: 0.1rem 0; }
+  .att-row { display: flex; align-items: center; justify-content: space-between; background: #0f0f1a; border-radius: 5px; padding: 0.35rem 0.6rem; }
+  .att-name { font-size: 0.82rem; color: #ccc; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .att-actions { display: flex; gap: 0.25rem; flex-shrink: 0; }
+  .att-btn { background: none; border: none; color: #888; cursor: pointer; font-size: 0.78rem; padding: 0.15rem 0.4rem; border-radius: 3px; }
+  .att-btn:hover { color: #ccc; background: #1a1a2e; }
+  .att-btn.danger { color: #f87171; }
+  .att-btn.danger:hover { opacity: 0.8; }
 </style>

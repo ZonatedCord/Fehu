@@ -62,6 +62,19 @@ fn migrate(conn: &Connection) -> SqlResult<()> {
             date       TEXT    NOT NULL,
             created_at TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
         );
+
+        CREATE TABLE IF NOT EXISTS settings (
+            key   TEXT PRIMARY KEY,
+            value TEXT NOT NULL DEFAULT ''
+        );
+
+        CREATE TABLE IF NOT EXISTS transaction_files (
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            transaction_id INTEGER NOT NULL REFERENCES transactions(id) ON DELETE CASCADE,
+            file_name      TEXT    NOT NULL,
+            file_path      TEXT    NOT NULL,
+            created_at     TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+        );
     ")?;
     // Add metodo column if not exists (idempotent)
     let _ = conn.execute("ALTER TABLE transactions ADD COLUMN metodo TEXT NOT NULL DEFAULT 'carta'", []);
