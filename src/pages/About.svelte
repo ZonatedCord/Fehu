@@ -30,6 +30,7 @@
     <div>
       <h1>Fehu</h1>
       <p class="tagline">Tracker finanziario locale. Nessun cloud, nessuna API esterna.</p>
+      <p class="etymology"><em>ᚠ Fehu</em> — runa norrena, significa «ricchezza, bestiame». Prima runa del futhark antico, simbolo di prosperità e abbondanza.</p>
       {#if version}
         <span class="version">v{version}</span>
       {/if}
@@ -88,7 +89,8 @@
     color: #a5b4fc; flex-shrink: 0;
   }
   h1 { margin: 0 0 0.25rem; font-size: 2rem; letter-spacing: 0.04em; }
-  .tagline { margin: 0 0 0.5rem; color: #666; font-size: 0.9rem; }
+  .tagline { margin: 0 0 0.3rem; color: #666; font-size: 0.9rem; }
+  .etymology { margin: 0 0 0.5rem; color: #444; font-size: 0.78rem; line-height: 1.5; }
   .version {
     display: inline-block; background: #1a1a2e;
     color: #666; font-size: 0.78rem; padding: 0.15rem 0.5rem;
