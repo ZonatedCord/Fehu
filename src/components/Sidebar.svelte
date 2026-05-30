@@ -60,8 +60,16 @@
     </button>
   {/each}
 
-  <button class="theme-btn" onclick={toggleTheme} title="Cambia tema">
-    {#if $theme === 'dark'}<Sun size={14} />{:else}<Moon size={14} />{/if}
+  <div class="separator"></div>
+
+  <button class="theme-toggle" onclick={toggleTheme}>
+    {#if $theme === 'dark'}
+      <Sun size={16} />
+      <span>Tema chiaro</span>
+    {:else}
+      <Moon size={16} />
+      <span>Tema scuro</span>
+    {/if}
   </button>
 </nav>
 
@@ -72,7 +80,16 @@
     display: flex; flex-direction: column;
     padding: 1rem 0.75rem; gap: 0.25rem;
   }
-  .theme-btn { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--text-muted); cursor: pointer; margin-top: 0.25rem; align-self: flex-start; }
+  .theme-toggle {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.55rem 0.75rem; border: none;
+    background: transparent; color: var(--text-dim);
+    cursor: pointer; border-radius: 6px;
+    font-size: 0.82rem; text-align: left;
+    transition: background 0.15s, color 0.15s;
+    width: 100%;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.07); color: var(--text-muted); }
   .logo {
     display: flex; align-items: center; gap: 0.5rem;
     padding: 0.5rem 0.5rem 1.25rem;
