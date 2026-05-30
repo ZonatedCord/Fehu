@@ -5,6 +5,14 @@ export interface Category {
   name: string;
   color: string;
   icon: string;
+  budget_limit: number | null;
+}
+
+export interface BudgetAlert {
+  category_id: number;
+  category_name: string;
+  budget_limit: number;
+  spent: number;
 }
 
 export interface Transaction {
@@ -18,7 +26,9 @@ export interface Transaction {
   notes: string;
   source: string;
   metodo: string;
+  currency: string;
   created_at: string;
+  attachment_count: number;
 }
 
 export interface TransactionInput {
@@ -29,6 +39,7 @@ export interface TransactionInput {
   description: string;
   notes: string;
   metodo: string;
+  currency: string;
 }
 
 export interface MonthlySummary {
@@ -57,6 +68,7 @@ export interface ReceiptData {
   descrizione: string | null;
   categoria: string | null;
   categoria_source: string | null;
+  metodo: string | null;
 }
 
 export interface Goal {
@@ -69,7 +81,33 @@ export interface Goal {
   created_at: string;
 }
 
-export type Page = 'dashboard' | 'transactions' | 'categories' | 'export' | 'foto' | 'obiettivi' | 'settings' | 'about' | 'piva';
+export interface RecurringTemplate {
+  id: number;
+  description: string;
+  amount: number;
+  type: TxType;
+  category_id: number | null;
+  category_name: string | null;
+  metodo: string;
+  notes: string;
+  frequency: string;
+  next_date: string;
+  active: boolean;
+  created_at: string;
+}
+
+export interface RecurringInput {
+  description: string;
+  amount: number;
+  type: TxType;
+  category_id: number | null;
+  metodo: string;
+  notes: string;
+  frequency: string;
+  next_date: string;
+}
+
+export type Page = 'dashboard' | 'transactions' | 'categories' | 'export' | 'foto' | 'obiettivi' | 'settings' | 'about' | 'piva' | 'ricorrenti';
 
 export interface AppSettings {
   ollama_url: string;

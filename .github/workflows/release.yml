@@ -1,0 +1,74 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14        # Apple Silicon (arm64)
+            arch: aarch64
+          - os: macos-13        # Intel (x86_64)
+            arch: x86_64
+          - os: windows-latest
+            arch: x86_64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Setup Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install Tesseract (macOS)
+        if: runner.os == 'macOS'
+        run: brew install tesseract tesseract-lang
+
+      - name: Install frontend dependencies
+        run: pnpm install
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Fehu ${{ github.ref_name }}'
+          releaseBody: |
+            ## Fehu ${{ github.ref_name }}
+
+            ### Requirements
+            - **macOS:** `brew install tesseract tesseract-lang`
+            - **Windows:** [Tesseract OCR installer](https://github.com/UB-Mannheim/tesseract/wiki)
+            - **Ollama** (optional): install `qwen2.5-coder:7b` for LLM categorization
+
+            ### macOS Gatekeeper
+            If the app is blocked on first launch:
+            ```
+            xattr -dr com.apple.quarantine /Applications/Fehu.app
+            ```
+          releaseDraft: true
+          prerelease: false

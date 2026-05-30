@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { Plus } from '@lucide/svelte';
+  import { Plus, Tag } from '@lucide/svelte';
   import { api } from '../lib/api';
   import Modal from '../components/Modal.svelte';
   import IconPicker from '../components/IconPicker.svelte';
@@ -11,7 +11,7 @@
   let error = $state('');
   let modalOpen = $state(false);
   let editing = $state<Category | null>(null);
-  let form = $state({ name: '', color: '#6366f1', icon: 'package' });
+  let form = $state({ name: '', color: '#6366f1', icon: 'package', budget_limit: '' });
   let saving = $state(false);
 
   async function load() {
@@ -20,15 +20,16 @@
   }
   onMount(load);
 
-  function openCreate() { editing = null; form = { name: '', color: '#6366f1', icon: 'package' }; modalOpen = true; }
-  function openEdit(cat: Category) { editing = cat; form = { name: cat.name, color: cat.color, icon: cat.icon }; modalOpen = true; }
+  function openCreate() { editing = null; form = { name: '', color: '#6366f1', icon: 'package', budget_limit: '' }; modalOpen = true; }
+  function openEdit(cat: Category) { editing = cat; form = { name: cat.name, color: cat.color, icon: cat.icon, budget_limit: cat.budget_limit != null ? String(cat.budget_limit) : '' }; modalOpen = true; }
 
   async function save() {
     if (!form.name.trim()) return;
     saving = true;
+    const budgetVal = form.budget_limit.trim() ? parseFloat(form.budget_limit) : null;
     try {
-      if (editing) await api.updateCategory(editing.id, form.name, form.color, form.icon);
-      else await api.createCategory(form.name, form.color, form.icon);
+      if (editing) await api.updateCategory(editing.id, form.name, form.color, form.icon, budgetVal);
+      else await api.createCategory(form.name, form.color, form.icon, budgetVal);
       modalOpen = false;
       await load();
     } catch (e: any) { error = e.message ?? String(e); }
@@ -48,6 +49,13 @@
     <button class="btn-primary" onclick={openCreate}><Plus size={14} /> Nuova</button>
   </div>
   {#if error}<p class="error">{error}</p>{/if}
+  {#if categories.length === 0}
+    <div class="empty-state">
+      <Tag size={44} class="empty-icon" />
+      <p class="empty-title">Nessuna categoria</p>
+      <p class="empty-hint">Crea categorie per organizzare le tue spese.</p>
+    </div>
+  {/if}
   <div class="grid">
     {#each categories as cat (cat.id)}
       <div class="card">
@@ -56,6 +64,7 @@
           <CategoryIcon name={cat.icon} size={16} />
         </span>
         <span class="name">{cat.name}</span>
+        {#if cat.budget_limit != null}<span class="budget-badge">€{cat.budget_limit}/m</span>{/if}
         <div class="actions">
           <button onclick={() => openEdit(cat)}>Modifica</button>
           <button class="danger" onclick={() => remove(cat.id)}>Elimina</button>
@@ -72,6 +81,9 @@
     <label>
       Icona
       <IconPicker value={form.icon} onselect={(n) => form.icon = n} />
+    </label>
+    <label>Budget mensile (€) — opzionale
+      <input type="number" bind:value={form.budget_limit} placeholder="es. 300" min="0" step="0.01" />
     </label>
     <div class="form-actions">
       <button type="button" onclick={() => modalOpen = false}>Annulla</button>
@@ -93,7 +105,12 @@
   .actions { display: flex; gap: 0.25rem; }
   .actions button { font-size: 0.75rem; padding: 0.2rem 0.4rem; background: #2a2a3e; border: none; color: #ccc; cursor: pointer; border-radius: 4px; }
   .actions .danger { color: #f87171; }
+  .budget-badge { font-size: 0.7rem; color: #888; background: #111120; border: 1px solid #2e2e4e; padding: 0.1rem 0.35rem; border-radius: 4px; white-space: nowrap; }
   .error { color: #f87171; }
+  .empty-state { display: flex; flex-direction: column; align-items: center; padding: 4rem 2rem; gap: 0.5rem; }
+  :global(.empty-icon) { color: #2e2e4e; }
+  .empty-title { color: #555; font-size: 1rem; margin: 0; }
+  .empty-hint { color: #3a3a4e; font-size: 0.85rem; margin: 0; }
   form { display: flex; flex-direction: column; gap: 0.75rem; }
   label { display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.85rem; color: #aaa; }
   input { padding: 0.5rem 0.75rem; border: 1px solid #2e2e4e; border-radius: 6px; background: #0f0f1a; color: #e0e0f0; font-size: 0.9rem; }

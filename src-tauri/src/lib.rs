@@ -8,6 +8,7 @@ use tauri::Manager;
 
 pub struct AppState {
     pub db: Db,
+    pub bot: std::sync::Mutex<Option<std::process::Child>>,
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -24,7 +25,10 @@ pub fn run() {
             std::fs::create_dir_all(db_path.parent().unwrap())?;
             let conn = db::open(db_path.to_str().unwrap())
                 .map_err(|e| format!("Failed to open database: {}", e))?;
-            app.manage(AppState { db: Db(std::sync::Mutex::new(conn)) });
+            app.manage(AppState {
+                db: Db(std::sync::Mutex::new(conn)),
+                bot: std::sync::Mutex::new(None),
+            });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -37,6 +41,7 @@ pub fn run() {
             commands::transactions::update_transaction,
             commands::transactions::delete_transaction,
             commands::stats::get_dashboard_stats,
+            commands::stats::get_budget_alerts,
             commands::export::export_csv,
             commands::export::export_xlsx,
             commands::import::import_xlsx,
@@ -57,6 +62,17 @@ pub fn run() {
             commands::files::attach_file,
             commands::files::list_attachments,
             commands::files::delete_attachment,
+            commands::backup::export_database,
+            commands::backup::restore_database,
+            commands::recurring::list_recurring,
+            commands::recurring::create_recurring,
+            commands::recurring::update_recurring,
+            commands::recurring::delete_recurring,
+            commands::recurring::toggle_recurring,
+            commands::recurring::check_and_insert_recurring,
+            commands::telegram::start_telegram_bot,
+            commands::telegram::stop_telegram_bot,
+            commands::telegram::get_telegram_status,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

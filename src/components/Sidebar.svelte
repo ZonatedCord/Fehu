@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
     LayoutDashboard, ArrowUpDown, Tag, Database, Camera, PiggyBank,
-    Settings, Info, Calculator,
+    Settings, Info, Calculator, RefreshCw,
   } from '@lucide/svelte';
   import { currentPage } from '../lib/stores';
   import type { Page } from '../lib/types';
@@ -13,6 +13,7 @@
     { label: 'Dati',         page: 'export',       icon: Database },
     { label: 'Foto',         page: 'foto',         icon: Camera },
     { label: 'Obiettivi',    page: 'obiettivi',    icon: PiggyBank },
+    { label: 'Ricorrenti',   page: 'ricorrenti',   icon: RefreshCw },
     { label: 'P.IVA',        page: 'piva',         icon: Calculator },
   ];
 
@@ -23,7 +24,17 @@
 </script>
 
 <nav class="sidebar">
-  <div class="logo">ᚠ fehu</div>
+  <div class="logo">
+    <svg viewBox="0 0 28 32" width="22" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+      <!-- Staff -->
+      <line x1="8" y1="3" x2="8" y2="29" />
+      <!-- Upper arm -->
+      <line x1="8" y1="9" x2="22" y2="5" />
+      <!-- Lower arm -->
+      <line x1="8" y1="17" x2="22" y2="13" />
+    </svg>
+    <span>fehu</span>
+  </div>
 
   {#each mainNav as item}
     <button class:active={$currentPage === item.page} onclick={() => currentPage.set(item.page)}>
@@ -50,9 +61,12 @@
     padding: 1rem 0.75rem; gap: 0.25rem;
   }
   .logo {
-    font-size: 1.25rem; font-weight: 700;
+    display: flex; align-items: center; gap: 0.5rem;
     padding: 0.5rem 0.5rem 1.25rem;
-    letter-spacing: 0.05em; color: #a5b4fc;
+    color: #a5b4fc;
+  }
+  .logo span {
+    font-size: 1.15rem; font-weight: 700; letter-spacing: 0.06em;
   }
   button {
     display: flex; align-items: center; gap: 0.5rem;

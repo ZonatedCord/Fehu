@@ -75,9 +75,27 @@ fn migrate(conn: &Connection) -> SqlResult<()> {
             file_path      TEXT    NOT NULL,
             created_at     TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
         );
+
+        CREATE TABLE IF NOT EXISTS recurring_templates (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            description TEXT    NOT NULL,
+            amount      REAL    NOT NULL,
+            type        TEXT    NOT NULL DEFAULT 'expense' CHECK(type IN ('income','expense')),
+            category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
+            metodo      TEXT    NOT NULL DEFAULT 'carta',
+            notes       TEXT    NOT NULL DEFAULT '',
+            frequency   TEXT    NOT NULL DEFAULT 'monthly' CHECK(frequency IN ('daily','weekly','monthly','yearly')),
+            next_date   TEXT    NOT NULL,
+            active      INTEGER NOT NULL DEFAULT 1,
+            created_at  TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+        );
     ")?;
-    // Add metodo column if not exists (idempotent)
+    // Add columns if not exists (idempotent)
     let _ = conn.execute("ALTER TABLE transactions ADD COLUMN metodo TEXT NOT NULL DEFAULT 'carta'", []);
+    let _ = conn.execute("ALTER TABLE transactions ADD COLUMN currency TEXT NOT NULL DEFAULT 'EUR'", []);
+    let _ = conn.execute("ALTER TABLE categories ADD COLUMN budget_limit REAL", []);
+    // Seed default categories (idempotent)
+    let _ = conn.execute("INSERT OR IGNORE INTO categories (name, color, icon) VALUES ('Altro', '#9ca3af', 'help-circle')", []);
     Ok(())
 }
 

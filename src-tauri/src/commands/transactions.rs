@@ -1,6 +1,6 @@
 use crate::{error::{AppError, AppResult}, models::Transaction, AppState};
 use rusqlite::params;
-use tauri::State;
+use tauri::{AppHandle, Manager, State};
 
 #[derive(serde::Deserialize)]
 pub struct TransactionInput {
@@ -12,7 +12,11 @@ pub struct TransactionInput {
     pub description: String,
     pub notes: String,
     pub metodo: String,
+    #[serde(default = "default_currency")]
+    pub currency: String,
 }
+
+fn default_currency() -> String { "EUR".to_string() }
 
 #[tauri::command]
 pub fn list_transactions(
@@ -24,7 +28,8 @@ pub fn list_transactions(
     let conn = state.db.0.lock().unwrap();
     let mut stmt = conn.prepare(
         "SELECT t.id, t.amount, t.type, t.category_id, c.name,
-                t.date, t.description, t.notes, t.source, t.metodo, t.created_at
+                t.date, t.description, t.notes, t.source, t.metodo, t.currency, t.created_at,
+                (SELECT COUNT(*) FROM transaction_files f WHERE f.transaction_id = t.id) AS attachment_count
          FROM transactions t
          LEFT JOIN categories c ON c.id = t.category_id
          WHERE (?1 IS NULL OR t.date >= ?1)
@@ -46,14 +51,15 @@ pub fn create_transaction(state: State<AppState>, input: TransactionInput) -> Ap
     }
     let conn = state.db.0.lock().unwrap();
     conn.execute(
-        "INSERT INTO transactions (amount,type,category_id,date,description,notes,metodo)
-         VALUES (?1,?2,?3,?4,?5,?6,?7)",
-        params![input.amount, input.tx_type, input.category_id, input.date, input.description, input.notes, input.metodo],
+        "INSERT INTO transactions (amount,type,category_id,date,description,notes,metodo,currency)
+         VALUES (?1,?2,?3,?4,?5,?6,?7,?8)",
+        params![input.amount, input.tx_type, input.category_id, input.date, input.description, input.notes, input.metodo, input.currency],
     )?;
     let id = conn.last_insert_rowid();
     let tx = conn.query_row(
         "SELECT t.id,t.amount,t.type,t.category_id,c.name,
-                t.date,t.description,t.notes,t.source,t.metodo,t.created_at
+                t.date,t.description,t.notes,t.source,t.metodo,t.currency,t.created_at,
+                0 AS attachment_count
          FROM transactions t LEFT JOIN categories c ON c.id=t.category_id
          WHERE t.id=?1",
         params![id],
@@ -72,18 +78,23 @@ pub fn update_transaction(state: State<AppState>, id: i64, input: TransactionInp
     }
     let conn = state.db.0.lock().unwrap();
     let rows = conn.execute(
-        "UPDATE transactions SET amount=?1,type=?2,category_id=?3,date=?4,description=?5,notes=?6,metodo=?7 WHERE id=?8",
-        params![input.amount, input.tx_type, input.category_id, input.date, input.description, input.notes, input.metodo, id],
+        "UPDATE transactions SET amount=?1,type=?2,category_id=?3,date=?4,description=?5,notes=?6,metodo=?7,currency=?8 WHERE id=?9",
+        params![input.amount, input.tx_type, input.category_id, input.date, input.description, input.notes, input.metodo, input.currency, id],
     )?;
     if rows == 0 { return Err(AppError::NotFound); }
     Ok(())
 }
 
 #[tauri::command]
-pub fn delete_transaction(state: State<AppState>, id: i64) -> AppResult<()> {
+pub fn delete_transaction(app: AppHandle, state: State<'_, AppState>, id: i64) -> AppResult<()> {
     let conn = state.db.0.lock().unwrap();
     let rows = conn.execute("DELETE FROM transactions WHERE id=?1", params![id])?;
     if rows == 0 { return Err(AppError::NotFound); }
+    drop(conn);
+    // Delete attachment files from disk (best-effort)
+    if let Ok(app_data) = app.path().app_data_dir() {
+        let _ = std::fs::remove_dir_all(app_data.join("attachments").join(id.to_string()));
+    }
     Ok(())
 }
 

@@ -1,4 +1,7 @@
+pub mod backup;
 pub mod categories;
+pub mod recurring;
+pub mod telegram;
 pub mod check;
 pub mod export;
 pub mod files;

@@ -2,8 +2,9 @@
   import { onMount } from 'svelte';
   import { Chart, registerables } from 'chart.js';
   import { api } from '../lib/api';
-  import type { DashboardStats, PatrimonioStats } from '../lib/types';
+  import type { BalanceAdjustment, BudgetAlert, DashboardStats, PatrimonioStats } from '../lib/types';
   import SankeyChart from '../components/SankeyChart.svelte';
+  import { Trash2, BarChart3 } from '@lucide/svelte';
 
   Chart.register(...registerables);
 
@@ -21,13 +22,28 @@
   let rettNote = $state('');
   let rettDate = $state(new Date().toISOString().slice(0, 10));
   let rettSaving = $state(false);
+  let rettifiche = $state<BalanceAdjustment[]>([]);
+  let showRettifiche = $state(false);
+  let budgetAlerts = $state<BudgetAlert[]>([]);
 
   async function load() {
     try {
-      stats = await api.getDashboardStats();
-      patrimonio = await api.getPatrimonio();
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      [stats, patrimonio, rettifiche, budgetAlerts] = await Promise.all([
+        api.getDashboardStats(),
+        api.getPatrimonio(),
+        api.listBalanceAdjustments(),
+        api.getBudgetAlerts(currentMonth),
+      ]);
       await new Promise(r => setTimeout(r, 0));
       renderCharts();
+    } catch (e: any) { error = e.message ?? String(e); }
+  }
+
+  async function eliminaRettifica(id: number) {
+    try {
+      await api.deleteBalanceAdjustment(id);
+      await load();
     } catch (e: any) { error = e.message ?? String(e); }
   }
 
@@ -117,7 +133,43 @@
         </div>
       </div>
       <div class="rettifica-link">
-        <button class="btn-ghost-small" onclick={() => showRettifica = true}>Aggiusta saldo</button>
+        <button class="btn-ghost-small" onclick={() => showRettifica = true}>+ Rettifica</button>
+        {#if rettifiche.length > 0}
+          <button class="btn-ghost-small" onclick={() => showRettifiche = !showRettifiche}>
+            {showRettifiche ? 'Nascondi' : `Rettifiche (${rettifiche.length})`}
+          </button>
+        {/if}
+      </div>
+      {#if showRettifiche && rettifiche.length > 0}
+        <div class="rettifiche-list">
+          {#each rettifiche as r (r.id)}
+            <div class="rett-row">
+              <span class="rett-date">{r.date}</span>
+              <span class="badge-metodo" class:cash={r.metodo === 'contanti'} class:card={r.metodo === 'carta'}>
+                {r.metodo === 'contanti' ? 'C' : 'K'}
+              </span>
+              <span class="rett-amount" class:pos={r.amount >= 0} class:neg={r.amount < 0}>
+                {r.amount >= 0 ? '+' : ''}{fmt(r.amount)}
+              </span>
+              <span class="rett-note">{r.note || '—'}</span>
+              <button class="btn-del-rett" onclick={() => eliminaRettifica(r.id)} title="Elimina">
+                <Trash2 size={13} />
+              </button>
+            </div>
+          {/each}
+        </div>
+      {/if}
+    {/if}
+    {#if budgetAlerts.length > 0}
+      <div class="budget-alerts">
+        {#each budgetAlerts as a (a.category_id)}
+          <div class="budget-alert">
+            <span class="alert-icon">!</span>
+            <span class="alert-text">
+              <strong>{a.category_name}</strong>: spesi {fmt(a.spent)} su {fmt(a.budget_limit)} mensili
+            </span>
+          </div>
+        {/each}
       </div>
     {/if}
     <div class="charts-row">
@@ -137,7 +189,10 @@
       <SankeyChart {stats} />
     </div>
   {:else if !error}
-    <p class="muted">Caricamento…</p>
+    <div class="dash-empty">
+      <BarChart3 size={48} class="dash-empty-icon" />
+      <p>Caricamento…</p>
+    </div>
   {/if}
 </div>
 
@@ -198,6 +253,8 @@
   h2 { margin: 0 0 1rem; font-size: 0.95rem; color: #aaa; font-weight: 500; }
   .error { color: #f87171; }
   .muted { color: #555; }
+  .dash-empty { display: flex; flex-direction: column; align-items: center; padding: 4rem; gap: 0.75rem; color: #555; }
+  :global(.dash-empty-icon) { color: #2e2e4e; }
   .patrimonio-row { margin-top: -0.5rem; }
   .kpi.cash .kpi-value { color: #4ade80; }
   .kpi.card .kpi-value { color: #60a5fa; }
@@ -206,6 +263,19 @@
   .rettifica-link { text-align: right; margin-bottom: 1rem; }
   .btn-ghost-small { background: none; border: none; color: #555; cursor: pointer; font-size: 0.78rem; padding: 0.25rem 0.5rem; text-decoration: underline; }
   .btn-ghost-small:hover { color: #888; }
+  .rettifiche-list { background: #111120; border: 1px solid #1e1e2e; border-radius: 8px; padding: 0.5rem; margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.15rem; }
+  .rett-row { display: flex; align-items: center; gap: 0.6rem; padding: 0.35rem 0.5rem; border-radius: 4px; font-size: 0.82rem; }
+  .rett-row:hover { background: #1a1a2e; }
+  .rett-date { color: #666; width: 90px; flex-shrink: 0; }
+  .badge-metodo { width: 18px; height: 18px; border-radius: 3px; font-size: 0.65rem; font-weight: 700; line-height: 18px; text-align: center; flex-shrink: 0; }
+  .badge-metodo.cash { background: #166534; color: #4ade80; }
+  .badge-metodo.card { background: #1e1b4b; color: #818cf8; }
+  .rett-amount { font-weight: 600; width: 90px; flex-shrink: 0; }
+  .rett-amount.pos { color: #4ade80; }
+  .rett-amount.neg { color: #f87171; }
+  .rett-note { flex: 1; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .btn-del-rett { background: none; border: none; color: #555; cursor: pointer; padding: 0.1rem 0.25rem; border-radius: 3px; display: flex; align-items: center; }
+  .btn-del-rett:hover { color: #f87171; }
   .backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 100; }
   .modal { background: #1a1a2e; border-radius: 10px; padding: 1.5rem; width: 360px; max-width: 95vw; }
   .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
@@ -218,4 +288,9 @@
   .btn-primary { background: #6366f1; color: #fff; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
   .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
   .btn-ghost { background: none; border: none; color: #666; cursor: pointer; padding: 0.5rem; }
+  .budget-alerts { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1.25rem; }
+  .budget-alert { display: flex; align-items: center; gap: 0.6rem; background: #1a0f0f; border: 1px solid #7f1d1d; border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.85rem; }
+  .alert-icon { color: #f87171; font-weight: 700; font-size: 1rem; }
+  .alert-text { color: #f4b8b8; }
+  .alert-text strong { color: #f87171; }
 </style>

@@ -42,18 +42,22 @@
     finally { newCatSaving = false; }
   }
 
-  onMount(async () => {
-    categories = await api.listCategories().catch(() => []);
-    const unDrag   = await listen('tauri://drag',           () => { dragging = true; });
-    const unLeave  = await listen('tauri://drag-leave',     () => { dragging = false; });
-    const unCancel = await listen('tauri://drag-cancelled', () => { dragging = false; });
-    const unDrop   = await listen('tauri://drag-drop', async (e: any) => {
-      dragging = false;
-      const paths: string[] = e.payload.paths ?? [];
-      const img = paths.find((p: string) => IMAGE_EXTS.some(ext => p.toLowerCase().endsWith('.' + ext)));
-      if (img) await setImage(img);
-    });
-    return () => { unDrag(); unLeave(); unCancel(); unDrop(); };
+  onMount(() => {
+    let cleanups: Array<() => void> = [];
+    api.listCategories().catch(() => []).then(cats => { categories = cats; });
+    (async () => {
+      const unDrag   = await listen('tauri://drag',           () => { dragging = true; });
+      const unLeave  = await listen('tauri://drag-leave',     () => { dragging = false; });
+      const unCancel = await listen('tauri://drag-cancelled', () => { dragging = false; });
+      const unDrop   = await listen('tauri://drag-drop', async (e: any) => {
+        dragging = false;
+        const paths: string[] = e.payload.paths ?? [];
+        const img = paths.find((p: string) => IMAGE_EXTS.some(ext => p.toLowerCase().endsWith('.' + ext)));
+        if (img) await setImage(img);
+      });
+      cleanups = [unDrag, unLeave, unCancel, unDrop];
+    })();
+    return () => { cleanups.forEach(f => f()); };
   });
 
   async function setImage(path: string) {
@@ -81,6 +85,7 @@
         }
       }
       if (result.descrizione) descrizione = result.descrizione;
+      if (result.metodo) metodo = result.metodo;
       if (result.categoria) {
         const match = categories.find(c => c.name.toLowerCase() === result.categoria!.toLowerCase());
         if (match) {
@@ -105,7 +110,7 @@
       await api.createTransaction({
         amount: importo, type: tipo, category_id: categoriaId,
         date: data || new Date().toISOString().slice(0, 10),
-        description: descrizione, notes: '', metodo,
+        description: descrizione, notes: '', metodo, currency: 'EUR',
       });
       imagePath = ''; previewUrl = ''; receipt = null;
       importo = 0; data = ''; descrizione = ''; categoriaId = null; metodo = 'contanti';

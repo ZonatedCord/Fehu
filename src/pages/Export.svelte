@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { Upload, Download } from '@lucide/svelte';
+  import { Upload, Download, HardDriveDownload, HardDriveUpload } from '@lucide/svelte';
   import { invoke } from '@tauri-apps/api/core';
-  import { open } from '@tauri-apps/plugin-dialog';
+  import { open, save } from '@tauri-apps/plugin-dialog';
   import { api } from '../lib/api';
 
   let startDate = $state('');
@@ -13,6 +13,10 @@
   let success = $state('');
   let exportingXlsx = $state(false);
   let successXlsx = $state('');
+  let backupBusy = $state(false);
+  let restoreBusy = $state(false);
+  let backupMsg = $state('');
+  let restoreMsg = $state('');
 
   async function doImport() {
     const path = await open({ filters: [{ name: 'Excel', extensions: ['xlsx'] }] });
@@ -41,6 +45,33 @@
       successXlsx = 'File Excel salvato.';
     } catch (e: any) { error = e.message ?? String(e); }
     finally { exportingXlsx = false; }
+  }
+
+  async function doBackup() {
+    backupBusy = true; error = ''; backupMsg = '';
+    try {
+      const filePath = await save({
+        filters: [{ name: 'SQLite Database', extensions: ['db'] }],
+        defaultPath: `fehu-backup-${new Date().toISOString().slice(0,10)}.db`,
+      });
+      if (!filePath) return;
+      await api.exportDatabase(filePath);
+      backupMsg = 'Backup salvato.';
+    } catch (e: any) { error = e.message ?? String(e); }
+    finally { backupBusy = false; }
+  }
+
+  async function doRestore() {
+    error = ''; restoreMsg = '';
+    const filePath = await open({ filters: [{ name: 'SQLite Database', extensions: ['db'] }] });
+    if (!filePath || typeof filePath !== 'string') return;
+    if (!confirm('Ripristinare il database da questo file? Tutti i dati attuali saranno sostituiti. Il vecchio database sarà salvato come fehu.db.bak.')) return;
+    restoreBusy = true;
+    try {
+      await api.restoreDatabase(filePath);
+      restoreMsg = 'Ripristino completato. Riavvia per essere sicuro.';
+    } catch (e: any) { error = e.message ?? String(e); }
+    finally { restoreBusy = false; }
   }
 
   async function doExport() {
@@ -98,6 +129,25 @@
     {#if successXlsx}<p class="success">{successXlsx}</p>{/if}
   </section>
 
+  <hr />
+
+  <section>
+    <h2>Backup & Ripristino</h2>
+    <p class="hint">Esporta o ripristina il database SQLite completo (transazioni, categorie, obiettivi, impostazioni).</p>
+    <div class="backup-row">
+      <button class="btn-backup" onclick={doBackup} disabled={backupBusy}>
+        <HardDriveDownload size={14} />
+        {backupBusy ? 'Salvataggio…' : 'Esporta backup .db'}
+      </button>
+      <button class="btn-restore" onclick={doRestore} disabled={restoreBusy}>
+        <HardDriveUpload size={14} />
+        {restoreBusy ? 'Ripristino…' : 'Ripristina da .db'}
+      </button>
+    </div>
+    {#if backupMsg}<p class="success">{backupMsg}</p>{/if}
+    {#if restoreMsg}<p class="success">{restoreMsg}</p>{/if}
+  </section>
+
   {#if error}<p class="error">{error}</p>{/if}
 </div>
 
@@ -120,6 +170,10 @@
   .btn-primary:disabled, .btn-secondary:disabled { opacity: 0.6; cursor: not-allowed; }
   .btn-excel { display: inline-flex; align-items: center; gap: 0.4rem; background: #16a34a; color: #fff; border: none; padding: 0.55rem 1.1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
   .btn-excel:disabled { opacity: 0.6; cursor: not-allowed; }
+  .backup-row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+  .btn-backup { display: inline-flex; align-items: center; gap: 0.4rem; background: #1a1a2e; border: 1px solid #2e2e4e; color: #ccc; padding: 0.55rem 1.1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
+  .btn-restore { display: inline-flex; align-items: center; gap: 0.4rem; background: #1a1a1a; border: 1px solid #7f1d1d; color: #f87171; padding: 0.55rem 1.1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
+  .btn-backup:disabled, .btn-restore:disabled { opacity: 0.6; cursor: not-allowed; }
   .success { color: #4ade80; margin-top: 0.75rem; }
   .error { color: #f87171; margin-top: 0.75rem; }
 </style>

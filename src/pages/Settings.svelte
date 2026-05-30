@@ -12,11 +12,21 @@
   let saving = $state(false);
   let saved = $state(false);
   let error = $state('');
+  let botToken = $state('');
+  let botRunning = $state(false);
+  let botMsg = $state('');
+  let botBusy = $state(false);
 
   onMount(async () => {
     try {
-      const s = await api.getSettings();
+      const [s, running, token] = await Promise.all([
+        api.getSettings(),
+        api.getTelegramStatus(),
+        api.getSettings().then(s => (s as any).telegram_token ?? ''),
+      ]);
       settings = s;
+      botRunning = running;
+      botToken = token;
     } catch (e: any) {
       error = e.message ?? String(e);
     }
@@ -30,6 +40,7 @@
       await api.setSetting('ollama_url', settings.ollama_url);
       await api.setSetting('tesseract_path', settings.tesseract_path);
       await api.setSetting('currency_symbol', settings.currency_symbol);
+      if (botToken) await api.setSetting('telegram_token', botToken);
       saved = true;
       setTimeout(() => { saved = false; }, 2000);
     } catch (e: any) {
@@ -37,6 +48,23 @@
     } finally {
       saving = false;
     }
+  }
+
+  async function toggleBot() {
+    botBusy = true; botMsg = ''; error = '';
+    try {
+      if (botRunning) {
+        await api.stopTelegramBot();
+        botRunning = false;
+        botMsg = 'Bot fermato.';
+      } else {
+        if (!botToken.trim()) { error = 'Inserisci il token bot prima di avviare.'; return; }
+        const msg = await api.startTelegramBot(botToken);
+        botRunning = true;
+        botMsg = msg;
+      }
+    } catch (e: any) { error = e.message ?? String(e); }
+    finally { botBusy = false; }
   }
 
   async function autoDetectTesseract() {
@@ -82,6 +110,32 @@
         <p class="field-hint">Usato per la visualizzazione degli importi.</p>
         <input bind:value={settings.currency_symbol} placeholder="€" style="max-width: 80px;" />
       </label>
+    </section>
+
+    <section>
+      <h2>Telegram Bot</h2>
+      <label>
+        <span>Token bot</span>
+        <p class="field-hint">Ottieni il token da @BotFather su Telegram. Richiede Python 3 + <code>pip install aiogram aiosqlite</code>.</p>
+        <input
+          type="password"
+          bind:value={botToken}
+          placeholder="1234567890:AAF..."
+          autocomplete="off"
+        />
+      </label>
+      <div class="bot-row">
+        <button
+          class="btn-bot"
+          class:running={botRunning}
+          onclick={toggleBot}
+          disabled={botBusy}
+        >
+          {botBusy ? '…' : botRunning ? 'Ferma bot' : 'Avvia bot'}
+        </button>
+        <span class="bot-status" class:on={botRunning}>{botRunning ? 'in esecuzione' : 'fermo'}</span>
+      </div>
+      {#if botMsg}<p class="bot-msg">{botMsg}</p>{/if}
     </section>
 
     <div class="actions">
@@ -131,4 +185,12 @@
   }
   .btn-ghost:hover { color: #aaa; border-color: #3e3e5e; }
   .error { color: #f87171; font-size: 0.85rem; margin: 0; }
+  code { background: #0f0f1a; padding: 0.1rem 0.35rem; border-radius: 3px; font-size: 0.8rem; }
+  .bot-row { display: flex; align-items: center; gap: 0.75rem; }
+  .btn-bot { background: #1a2e1a; border: 1px solid #166534; color: #4ade80; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
+  .btn-bot.running { background: #2e1a1a; border-color: #7f1d1d; color: #f87171; }
+  .btn-bot:disabled { opacity: 0.6; cursor: not-allowed; }
+  .bot-status { font-size: 0.78rem; color: #555; }
+  .bot-status.on { color: #4ade80; }
+  .bot-msg { color: #4ade80; font-size: 0.82rem; margin: 0; }
 </style>

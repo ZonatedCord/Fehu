@@ -1,13 +1,14 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { AppSettings, BalanceAdjustment, Category, DashboardStats, DepsStatus, Goal, PatrimonioStats, Transaction, TransactionFile, TransactionInput } from './types';
+import type { AppSettings, BalanceAdjustment, BudgetAlert, Category, DashboardStats, DepsStatus, Goal, PatrimonioStats, RecurringInput, RecurringTemplate, Transaction, TransactionFile, TransactionInput } from './types';
 
 export const api = {
   listCategories: () => invoke<Category[]>('list_categories'),
-  createCategory: (name: string, color: string, icon: string) =>
-    invoke<Category>('create_category', { name, color, icon }),
-  updateCategory: (id: number, name: string, color: string, icon: string) =>
-    invoke<void>('update_category', { id, name, color, icon }),
+  createCategory: (name: string, color: string, icon: string, budget_limit?: number | null) =>
+    invoke<Category>('create_category', { name, color, icon, budget_limit: budget_limit ?? null }),
+  updateCategory: (id: number, name: string, color: string, icon: string, budget_limit?: number | null) =>
+    invoke<void>('update_category', { id, name, color, icon, budget_limit: budget_limit ?? null }),
   deleteCategory: (id: number) => invoke<void>('delete_category', { id }),
+  getBudgetAlerts: (month: string) => invoke<BudgetAlert[]>('get_budget_alerts', { month }),
 
   listTransactions: (filters?: { start_date?: string; end_date?: string; category_id?: number }) =>
     invoke<Transaction[]>('list_transactions', filters ?? {}),
@@ -49,4 +50,18 @@ export const api = {
   listAttachments: (transactionId: number) =>
     invoke<TransactionFile[]>('list_attachments', { transaction_id: transactionId }),
   deleteAttachment: (id: number) => invoke<void>('delete_attachment', { id }),
+
+  startTelegramBot: (token: string) => invoke<string>('start_telegram_bot', { token }),
+  stopTelegramBot: () => invoke<void>('stop_telegram_bot'),
+  getTelegramStatus: () => invoke<boolean>('get_telegram_status'),
+
+  exportDatabase: (targetPath: string) => invoke<void>('export_database', { targetPath }),
+  restoreDatabase: (sourcePath: string) => invoke<void>('restore_database', { sourcePath }),
+
+  listRecurring: () => invoke<RecurringTemplate[]>('list_recurring'),
+  createRecurring: (input: RecurringInput) => invoke<RecurringTemplate>('create_recurring', { input }),
+  updateRecurring: (id: number, input: RecurringInput) => invoke<void>('update_recurring', { id, input }),
+  deleteRecurring: (id: number) => invoke<void>('delete_recurring', { id }),
+  toggleRecurring: (id: number) => invoke<boolean>('toggle_recurring', { id }),
+  checkAndInsertRecurring: () => invoke<number>('check_and_insert_recurring'),
 };

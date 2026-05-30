@@ -7,12 +7,27 @@ pub struct Category {
     pub name: String,
     pub color: String,
     pub icon: String,
+    pub budget_limit: Option<f64>,
 }
 
 impl Category {
     pub fn from_row(row: &Row) -> rusqlite::Result<Self> {
-        Ok(Self { id: row.get(0)?, name: row.get(1)?, color: row.get(2)?, icon: row.get(3)? })
+        Ok(Self {
+            id: row.get(0)?,
+            name: row.get(1)?,
+            color: row.get(2)?,
+            icon: row.get(3)?,
+            budget_limit: row.get(4).ok().flatten(),
+        })
     }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct BudgetAlert {
+    pub category_id: i64,
+    pub category_name: String,
+    pub budget_limit: f64,
+    pub spent: f64,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -28,7 +43,9 @@ pub struct Transaction {
     pub notes: String,
     pub source: String,
     pub metodo: String,
+    pub currency: String,
     pub created_at: String,
+    pub attachment_count: i64,
 }
 
 impl Transaction {
@@ -44,7 +61,9 @@ impl Transaction {
             notes: row.get(7)?,
             source: row.get(8)?,
             metodo: row.get(9)?,
-            created_at: row.get(10)?,
+            currency: row.get(10).unwrap_or_else(|_| "EUR".to_string()),
+            created_at: row.get(11)?,
+            attachment_count: row.get(12).unwrap_or(0),
         })
     }
 }
@@ -90,6 +109,7 @@ pub struct ReceiptData {
     pub descrizione: Option<String>,
     pub categoria: Option<String>,
     pub categoria_source: Option<String>,
+    pub metodo: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -108,6 +128,23 @@ pub struct TransactionFile {
     pub transaction_id: i64,
     pub file_name: String,
     pub file_path: String,
+    pub created_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct RecurringTemplate {
+    pub id: i64,
+    pub description: String,
+    pub amount: f64,
+    #[serde(rename = "type")]
+    pub tx_type: String,
+    pub category_id: Option<i64>,
+    pub category_name: Option<String>,
+    pub metodo: String,
+    pub notes: String,
+    pub frequency: String,
+    pub next_date: String,
+    pub active: bool,
     pub created_at: String,
 }
 

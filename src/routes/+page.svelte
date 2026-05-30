@@ -13,6 +13,7 @@
   import Settings from '../pages/Settings.svelte';
   import About from '../pages/About.svelte';
   import PIva from '../pages/PIva.svelte';
+  import Ricorrenti from '../pages/Ricorrenti.svelte';
 
   let showOnboarding = $state(false);
 
@@ -43,6 +44,7 @@
     {:else if $currentPage === 'settings'}<Settings />
     {:else if $currentPage === 'about'}<About />
     {:else if $currentPage === 'piva'}<PIva />
+    {:else if $currentPage === 'ricorrenti'}<Ricorrenti />
     {/if}
   </main>
 </div>

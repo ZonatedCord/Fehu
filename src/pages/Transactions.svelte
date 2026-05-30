@@ -66,7 +66,7 @@
 
   const emptyForm = (): TransactionInput => ({
     amount: 0, type: 'expense', category_id: null,
-    date: format(new Date(), 'yyyy-MM-dd'), description: '', notes: '', metodo: 'carta',
+    date: format(new Date(), 'yyyy-MM-dd'), description: '', notes: '', metodo: 'carta', currency: 'EUR',
   });
   let form = $state<TransactionInput>(emptyForm());
   let saving = $state(false);
@@ -147,7 +147,7 @@
   }
   function openEdit(tx: Transaction) {
     editing = tx;
-    form = { amount: tx.amount, type: tx.type, category_id: tx.category_id, date: tx.date, description: tx.description, notes: tx.notes, metodo: tx.metodo ?? 'carta' };
+    form = { amount: tx.amount, type: tx.type, category_id: tx.category_id, date: tx.date, description: tx.description, notes: tx.notes, metodo: tx.metodo ?? 'carta', currency: tx.currency ?? 'EUR' };
     modalOpen = true;
   }
 
@@ -213,7 +213,10 @@
         {#each filtered as tx (tx.id)}
           <tr>
             <td class="date">{formatDate(tx.date)}</td>
-            <td>{tx.description || '—'}</td>
+            <td class="desc-cell">
+              {tx.description || '—'}
+              {#if tx.attachment_count > 0}<Paperclip size={12} class="attach-icon" />{/if}
+            </td>
             <td>{#if tx.category_name}<span class="tag">{tx.category_name}</span>{:else}<span class="muted">—</span>{/if}</td>
             <td class="metodo">
               {#if tx.metodo === 'contanti'}<span class="badge cash">C</span>
@@ -222,6 +225,7 @@
             </td>
             <td class="amount" class:income={tx.type === 'income'} class:expense={tx.type === 'expense'}>
               {tx.type === 'income' ? '+' : '-'}{fmt(tx.amount)}
+              {#if tx.currency && tx.currency !== 'EUR'}<span class="currency-badge">{tx.currency}</span>{/if}
             </td>
             <td class="row-actions">
               <button onclick={() => openEdit(tx)}>Modifica</button>
@@ -230,7 +234,10 @@
           </tr>
         {/each}
         {#if filtered.length === 0}
-          <tr><td colspan="6" class="empty">Nessuna transazione</td></tr>
+          <tr><td colspan="6" class="empty">
+            {#if transactions.length === 0}Nessuna transazione ancora — aggiungi la prima spesa o entrata.
+            {:else}Nessuna transazione corrisponde ai filtri.{/if}
+          </td></tr>
         {/if}
       </tbody>
     </table>
@@ -310,14 +317,25 @@
         <option value="income">Entrata</option>
       </select>
     </label>
-    <label>Metodo
-      <select bind:value={form.metodo}>
-        <option value="carta">Carta</option>
-        <option value="contanti">Contanti</option>
-        <option value="altro">Altro</option>
-      </select>
-    </label>
-    <label>Importo (€)<input type="number" bind:value={form.amount} min="0.01" step="0.01" required /></label>
+    <div class="form-row-2">
+      <label>Metodo
+        <select bind:value={form.metodo}>
+          <option value="carta">Carta</option>
+          <option value="contanti">Contanti</option>
+          <option value="altro">Altro</option>
+        </select>
+      </label>
+      <label>Valuta
+        <select bind:value={form.currency}>
+          <option value="EUR">EUR €</option>
+          <option value="USD">USD $</option>
+          <option value="GBP">GBP £</option>
+          <option value="CHF">CHF</option>
+          <option value="JPY">JPY ¥</option>
+        </select>
+      </label>
+    </div>
+    <label>Importo<input type="number" bind:value={form.amount} min="0.01" step="0.01" required /></label>
     <label>Data<input type="date" bind:value={form.date} required /></label>
     <label>Descrizione<input bind:value={form.description} placeholder="es. Caffè al bar" /></label>
     <label>Categoria
@@ -395,6 +413,11 @@
   .expense { color: #f87171; }
   .tag { background: #2a2a3e; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem; }
   .muted { color: #555; }
+  .desc-cell { display: flex; align-items: center; gap: 0.35rem; }
+  :global(.attach-icon) { color: #555; flex-shrink: 0; }
+  .currency-badge { font-size: 0.65rem; background: #1e2a3e; color: #60a5fa; border: 1px solid #2e3e5e; padding: 0.05rem 0.3rem; border-radius: 3px; vertical-align: middle; margin-left: 0.2rem; }
+  .form-row-2 { display: flex; gap: 0.75rem; }
+  .form-row-2 label { flex: 1; }
   .row-actions { display: flex; gap: 0.25rem; justify-content: flex-end; }
   .row-actions button { font-size: 0.75rem; padding: 0.2rem 0.4rem; background: #2a2a3e; border: none; color: #ccc; cursor: pointer; border-radius: 4px; }
   .row-actions .danger { color: #f87171; }

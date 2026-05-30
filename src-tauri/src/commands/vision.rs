@@ -166,6 +166,13 @@ pub async fn analyze_receipt(
 
     let mut data = ReceiptData::default();
 
+    // Metodo da keywords pagamento
+    {
+        let lower = raw_text.to_lowercase();
+        let card_kw = ["postepay", "bancomat", "carta", "pos", "mastercard", "visa", "amex", "paypal", "maestro", "contactless"];
+        data.metodo = Some(if card_kw.iter().any(|k| lower.contains(k)) { "carta" } else { "contanti" }.to_string());
+    }
+
     // Importo via regex Rust — handles: -9,40€ | -9.40€ | -9 40€ | 9,40 €
     let re_amt = regex::Regex::new(r"-?(\d+)[,. ](\d{2})\s*[€$]").ok();
     if let Some(re) = re_amt {

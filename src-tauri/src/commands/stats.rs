@@ -1,4 +1,4 @@
-use crate::{error::AppResult, models::{CategorySummary, DashboardStats, MonthlySummary}, AppState};
+use crate::{error::AppResult, models::{BudgetAlert, CategorySummary, DashboardStats, MonthlySummary}, AppState};
 use rusqlite::params;
 use tauri::State;
 
@@ -50,4 +50,28 @@ pub fn get_dashboard_stats(
         .collect::<rusqlite::Result<_>>()?;
 
     Ok(DashboardStats { total_income, total_expense, monthly, by_category })
+}
+
+#[tauri::command]
+pub fn get_budget_alerts(state: State<AppState>, month: String) -> AppResult<Vec<BudgetAlert>> {
+    let conn = state.db.0.lock().unwrap();
+    let mut stmt = conn.prepare(
+        "SELECT c.id, c.name, c.budget_limit, COALESCE(SUM(t.amount), 0) AS spent
+         FROM categories c
+         LEFT JOIN transactions t ON t.category_id = c.id
+           AND t.type = 'expense'
+           AND strftime('%Y-%m', t.date) = ?1
+         WHERE c.budget_limit IS NOT NULL
+         GROUP BY c.id
+         HAVING spent > c.budget_limit",
+    )?;
+    let rows = stmt.query_map(params![month], |r| {
+        Ok(BudgetAlert {
+            category_id: r.get(0)?,
+            category_name: r.get(1)?,
+            budget_limit: r.get(2)?,
+            spent: r.get(3)?,
+        })
+    })?;
+    Ok(rows.collect::<rusqlite::Result<_>>()?)
 }
