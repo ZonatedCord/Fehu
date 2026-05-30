@@ -79,6 +79,8 @@
         botMsg = 'Bot fermato.';
       } else {
         if (!botToken.trim()) { error = 'Inserisci il token bot prima di avviare.'; return; }
+        // Auto-save token so it persists across navigation
+        await api.setSetting('telegram_token', botToken);
         const msg = await api.startTelegramBot(botToken);
         botRunning = true;
         botMsg = msg;
@@ -212,7 +214,7 @@
     font-size: 0.82rem; white-space: nowrap;
   }
   .btn-ghost:hover { color: #aaa; border-color: #3e3e5e; }
-  .error { color: #f87171; font-size: 0.85rem; margin: 0; }
+  .error { color: #f87171; font-size: 0.85rem; margin: 0; white-space: pre-wrap; user-select: text; }
   code { background: var(--bg-base); padding: 0.1rem 0.35rem; border-radius: 3px; font-size: 0.8rem; }
   .bot-row { display: flex; align-items: center; gap: 0.75rem; }
   .btn-bot { background: #1a2e1a; border: 1px solid #166534; color: #4ade80; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }

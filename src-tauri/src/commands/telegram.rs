@@ -48,6 +48,27 @@ pub fn start_telegram_bot(
             ))?
     };
 
+    // Verify Python dependencies before spawning
+    let dep_check = std::process::Command::new("python3")
+        .args(["-c", "import aiogram, aiosqlite"])
+        .output();
+    match dep_check {
+        Ok(out) if !out.status.success() => {
+            let stderr = String::from_utf8_lossy(&out.stderr);
+            let first_line = stderr.lines().next().unwrap_or("").to_string();
+            return Err(AppError::Validation(format!(
+                "Dipendenze Python mancanti. Esegui nel terminale:\n\npip3 install aiogram aiosqlite\n\nErrore: {}",
+                first_line
+            )));
+        }
+        Err(e) => {
+            return Err(AppError::Validation(format!(
+                "python3 non trovato: {e}. Installa Python 3 e poi: pip3 install aiogram aiosqlite"
+            )));
+        }
+        Ok(_) => {}
+    }
+
     // Stop existing instance
     {
         let mut guard = state.bot.lock().unwrap();
@@ -65,7 +86,7 @@ pub fn start_telegram_bot(
         .arg(db_path.to_str().unwrap_or(""))
         .spawn()
         .map_err(|e| AppError::Validation(
-            format!("Impossibile avviare python3: {e}. Assicurati che Python 3 e aiogram siano installati.")
+            format!("Impossibile avviare python3: {e}")
         ))?;
 
     let pid = child.id();
