@@ -48,8 +48,17 @@ pub fn start_telegram_bot(
             ))?
     };
 
+    // Prefer venv python (sidecar/.venv/bin/python3) if available
+    let sidecar_dir = script.parent().expect("script has parent");
+    let venv_python = sidecar_dir.join(".venv/bin/python3");
+    let python = if venv_python.exists() {
+        venv_python
+    } else {
+        std::path::PathBuf::from("python3")
+    };
+
     // Verify Python dependencies before spawning
-    let dep_check = std::process::Command::new("python3")
+    let dep_check = std::process::Command::new(&python)
         .args(["-c", "import aiogram, aiosqlite"])
         .output();
     match dep_check {
@@ -57,13 +66,13 @@ pub fn start_telegram_bot(
             let stderr = String::from_utf8_lossy(&out.stderr);
             let first_line = stderr.lines().next().unwrap_or("").to_string();
             return Err(AppError::Validation(format!(
-                "Dipendenze Python mancanti. Esegui nel terminale:\n\npip3 install aiogram aiosqlite\n\nErrore: {}",
+                "Dipendenze Python mancanti. Esegui:\n\ncd sidecar && python3 -m venv .venv && .venv/bin/pip install aiogram aiosqlite\n\nErrore: {}",
                 first_line
             )));
         }
         Err(e) => {
             return Err(AppError::Validation(format!(
-                "python3 non trovato: {e}. Installa Python 3 e poi: pip3 install aiogram aiosqlite"
+                "Python non trovato: {e}"
             )));
         }
         Ok(_) => {}
@@ -77,8 +86,8 @@ pub fn start_telegram_bot(
         }
     }
 
-    // Spawn Python bot
-    let child = std::process::Command::new("python3")
+    // Spawn Python bot using venv interpreter
+    let child = std::process::Command::new(&python)
         .arg(&script)
         .arg("--token")
         .arg(&token)
@@ -86,7 +95,7 @@ pub fn start_telegram_bot(
         .arg(db_path.to_str().unwrap_or(""))
         .spawn()
         .map_err(|e| AppError::Validation(
-            format!("Impossibile avviare python3: {e}")
+            format!("Impossibile avviare python: {e}")
         ))?;
 
     let pid = child.id();
