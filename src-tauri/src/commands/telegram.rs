@@ -20,18 +20,26 @@ pub fn start_telegram_bot(
         .map_err(|e| AppError::Validation(format!("App data dir: {e}")))?
         .join("fehu.db");
 
-    // Locate the bot script: try resource dir first, then project-relative path for dev
+    // Locate the bot script across multiple candidate paths
     let script = {
         let from_resources = app
             .path()
             .resource_dir()
             .ok()
             .map(|p| p.join("sidecar/fehu_bot.py"));
-        let from_dev = std::env::current_dir()
+        let from_cwd = std::env::current_dir()
             .ok()
             .map(|p| p.join("sidecar/fehu_bot.py"));
+        // In Tauri dev, cwd is src-tauri; go up one level to project root
+        let from_cwd_parent = std::env::current_dir()
+            .ok()
+            .and_then(|p| p.parent().map(|p| p.join("sidecar/fehu_bot.py")));
+        // Compile-time project root (CARGO_MANIFEST_DIR = src-tauri, parent = project root)
+        let from_manifest = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .map(|p| p.join("sidecar/fehu_bot.py"));
 
-        [from_resources, from_dev]
+        [from_resources, from_cwd, from_cwd_parent, from_manifest]
             .into_iter()
             .flatten()
             .find(|p| p.exists())

@@ -23,14 +23,13 @@
 
   onMount(async () => {
     try {
-      const [s, running, token] = await Promise.all([
+      const [s, running] = await Promise.all([
         api.getSettings(),
         api.getTelegramStatus(),
-        api.getSettings().then(s => (s as any).telegram_token ?? ''),
       ]);
       settings = s;
       botRunning = running;
-      botToken = token;
+      botToken = (s as any).telegram_token ?? '';
     } catch (e: any) {
       error = e.message ?? String(e);
     }
@@ -188,7 +187,7 @@
   section { background: var(--bg-card); border-radius: 10px; padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; }
   h2 { margin: 0 0 0.25rem; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); }
 
-  label { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.9rem; color: #ccc; }
+  label { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.9rem; color: var(--text); }
   .field-hint { font-size: 0.78rem; color: var(--text-dim); margin: 0; line-height: 1.4; }
   .input-row { display: flex; gap: 0.5rem; align-items: center; }
   .input-row input { flex: 1; }
@@ -202,7 +201,7 @@
 
   .actions { display: flex; flex-direction: column; gap: 0.5rem; }
   .btn-primary {
-    background: #6366f1; color: #fff; border: none;
+    background: var(--accent); color: #fff; border: none;
     padding: 0.6rem 1.25rem; border-radius: 6px;
     cursor: pointer; font-size: 0.9rem; align-self: flex-start;
   }

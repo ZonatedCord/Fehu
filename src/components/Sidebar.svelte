@@ -84,16 +84,16 @@
   button {
     display: flex; align-items: center; gap: 0.5rem;
     padding: 0.55rem 0.75rem; border: none;
-    background: transparent; color: #ccc;
+    background: transparent; color: var(--text-muted);
     cursor: pointer; border-radius: 6px;
     font-size: 0.9rem; text-align: left;
-    transition: background 0.15s;
+    transition: background 0.15s, color 0.15s;
   }
-  button:hover { background: #1e1e2e; }
-  button.active { background: #1e1e2e; color: #a5b4fc; }
+  button:hover { background: rgba(255,255,255,0.07); color: var(--text); }
+  button.active { background: rgba(99,102,241,0.18); color: var(--accent-lt); }
   .separator {
     margin: 0.5rem 0.5rem;
-    border-top: 1px solid #1e1e2e;
+    border-top: 1px solid var(--border2);
     flex-shrink: 0;
   }
 </style>

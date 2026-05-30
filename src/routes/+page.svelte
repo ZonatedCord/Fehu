@@ -76,36 +76,38 @@
 
 <style>
   :global(:root) {
-    --bg-base:    #0f0f1a;
-    --bg-card:    #1a1a2e;
-    --bg-card2:   #111120;
-    --bg-input:   #0f0f1a;
-    --border:     #2e2e4e;
-    --border2:    #1e1e2e;
-    --text:       #e0e0f0;
-    --text-muted: #888;
-    --text-dim:   #555;
-    --accent:     #6366f1;
-    --accent-lt:  #a5b4fc;
-    --income:     #4ade80;
-    --expense:    #f87171;
-    --sidebar-bg: #111;
+    --bg-base:     #0f0f1a;
+    --bg-card:     #1a1a2e;
+    --bg-card2:    #111120;
+    --bg-elevated: #252540;
+    --bg-input:    #0f0f1a;
+    --border:      #2e2e4e;
+    --border2:     #1e1e2e;
+    --text:        #e0e0f0;
+    --text-muted:  #9098b0;
+    --text-dim:    #565878;
+    --accent:      #6366f1;
+    --accent-lt:   #a5b4fc;
+    --income:      #4ade80;
+    --expense:     #f87171;
+    --sidebar-bg:  #0c0c18;
   }
   :global([data-theme="light"]) {
-    --bg-base:    #f0f2f8;
-    --bg-card:    #ffffff;
-    --bg-card2:   #f8f9fc;
-    --bg-input:   #f1f3f9;
-    --border:     #d1d5db;
-    --border2:    #e5e7eb;
-    --text:       #111827;
-    --text-muted: #6b7280;
-    --text-dim:   #9ca3af;
-    --accent:     #6366f1;
-    --accent-lt:  #818cf8;
-    --income:     #16a34a;
-    --expense:    #dc2626;
-    --sidebar-bg: #1e1e2e;
+    --bg-base:     #f0f2f8;
+    --bg-card:     #ffffff;
+    --bg-card2:    #f8f9fc;
+    --bg-elevated: #eaecf5;
+    --bg-input:    #f1f3f9;
+    --border:      #d1d5db;
+    --border2:     #e5e7eb;
+    --text:        #111827;
+    --text-muted:  #6b7280;
+    --text-dim:    #9ca3af;
+    --accent:      #6366f1;
+    --accent-lt:   #818cf8;
+    --income:      #16a34a;
+    --expense:     #dc2626;
+    --sidebar-bg:  #1e1e2e;
   }
   :global(*, *::before, *::after) { box-sizing: border-box; }
   :global(body) {
@@ -113,6 +115,8 @@
     background: var(--bg-base); color: var(--text);
     transition: background 0.2s, color 0.2s;
   }
+  /* Center all page components within the content area */
+  :global(.page) { margin: 0 auto; }
   .layout { display: flex; min-height: 100vh; }
-  .content { flex: 1; padding: 1.5rem; overflow-y: auto; }
+  .content { flex: 1; padding: 2rem 2.5rem; overflow-y: auto; }
 </style>
