@@ -7,6 +7,7 @@
   import { open } from '@tauri-apps/plugin-dialog';
   import { openPath } from '@tauri-apps/plugin-opener';
   import { Paperclip } from '@lucide/svelte';
+  import { keyboardAction } from '../lib/stores';
 
   let transactions = $state<Transaction[]>([]);
   let categories = $state<Category[]>([]);
@@ -16,6 +17,11 @@
   let filterType = $state<'all' | 'income' | 'expense'>('all');
   let filterCat = $state<number | string>('');
   let viewMode = $state<'list' | 'calendar'>('list');
+  let searchText = $state('');
+  let startDate = $state('');
+  let endDate = $state('');
+  let searchRef = $state<HTMLInputElement | null>(null);
+  let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Calendar state
   const today = new Date();
@@ -130,10 +136,32 @@
 
   async function load() {
     try {
-      [transactions, categories] = await Promise.all([api.listTransactions(), api.listCategories()]);
+      [transactions, categories] = await Promise.all([
+        api.listTransactions({
+          start_date: startDate || undefined,
+          end_date: endDate || undefined,
+          search_text: searchText.trim() || undefined,
+        }),
+        api.listCategories(),
+      ]);
     } catch (e: any) { error = e.message ?? String(e); }
   }
+
+  function onSearchInput() {
+    if (searchTimer) clearTimeout(searchTimer);
+    searchTimer = setTimeout(load, 300);
+  }
+
+  function resetDateFilter() { startDate = ''; endDate = ''; load(); }
+
   onMount(load);
+
+  // React to keyboard shortcuts from +page.svelte
+  keyboardAction.subscribe(action => {
+    if (!action) return;
+    if (action === 'new-transaction') { editing = null; form = emptyForm(); modalOpen = true; }
+    if (action === 'focus-search') { searchRef?.focus(); }
+  });
 
   let filtered = $derived(transactions.filter(t => {
     if (filterType !== 'all' && t.type !== filterType) return false;
@@ -194,6 +222,13 @@
 
   {#if viewMode === 'list'}
     <div class="filters">
+      <input
+        class="search-input"
+        bind:this={searchRef}
+        bind:value={searchText}
+        oninput={onSearchInput}
+        placeholder="Cerca…"
+      />
       <select bind:value={filterType}>
         <option value="all">Tutti i tipi</option>
         <option value="income">Entrata</option>
@@ -205,6 +240,11 @@
           <option value={cat.id}>{cat.name}</option>
         {/each}
       </select>
+      <input type="date" class="date-filter" bind:value={startDate} onchange={load} title="Dal" />
+      <input type="date" class="date-filter" bind:value={endDate} onchange={load} title="Al" />
+      {#if startDate || endDate}
+        <button class="btn-reset" onclick={resetDateFilter} title="Reset date">✕</button>
+      {/if}
     </div>
     {#if error}<p class="error">{error}</p>{/if}
     <table>
@@ -398,54 +438,58 @@
   .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
   h1 { margin: 0; font-size: 1.5rem; }
   .header-right { display: flex; align-items: center; gap: 0.75rem; }
-  .view-toggle { display: flex; border-radius: 6px; overflow: hidden; border: 1px solid #2e2e4e; }
-  .view-toggle button { padding: 0.35rem 0.75rem; border: none; background: #0f0f1a; color: #888; cursor: pointer; font-size: 0.82rem; }
+  .view-toggle { display: flex; border-radius: 6px; overflow: hidden; border: 1px solid var(--border); }
+  .view-toggle button { padding: 0.35rem 0.75rem; border: none; background: var(--bg-base); color: var(--text-muted); cursor: pointer; font-size: 0.82rem; }
   .view-toggle button.active { background: #1e1e3e; color: #a5b4fc; }
 
-  .filters { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
-  select { padding: 0.4rem 0.75rem; background: #1a1a2e; border: 1px solid #2e2e4e; color: #e0e0f0; border-radius: 6px; font-size: 0.85rem; }
+  .filters { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
+  .search-input { padding: 0.4rem 0.75rem; background: var(--bg-card); border: 1px solid var(--border); color: var(--text); border-radius: 6px; font-size: 0.85rem; min-width: 140px; flex: 1; max-width: 220px; }
+  .date-filter { padding: 0.4rem 0.5rem; background: var(--bg-card); border: 1px solid var(--border); color: var(--text); border-radius: 6px; font-size: 0.82rem; width: 130px; }
+  .btn-reset { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 0.9rem; padding: 0.2rem 0.4rem; }
+  .btn-reset:hover { color: #f87171; }
+  select { padding: 0.4rem 0.75rem; background: var(--bg-card); border: 1px solid var(--border); color: var(--text); border-radius: 6px; font-size: 0.85rem; }
   table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-  th { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid #2e2e4e; color: #888; font-weight: 500; font-size: 0.8rem; }
+  th { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid #2e2e4e; color: var(--text-muted); font-weight: 500; font-size: 0.8rem; }
   td { padding: 0.6rem 0.75rem; border-bottom: 1px solid #1a1a2e; }
-  .date { color: #888; font-size: 0.8rem; white-space: nowrap; }
+  .date { color: var(--text-muted); font-size: 0.8rem; white-space: nowrap; }
   .amount { font-weight: 600; text-align: right; }
   .income { color: #4ade80; }
   .expense { color: #f87171; }
   .tag { background: #2a2a3e; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem; }
-  .muted { color: #555; }
+  .muted { color: var(--text-dim); }
   .desc-cell { display: flex; align-items: center; gap: 0.35rem; }
-  :global(.attach-icon) { color: #555; flex-shrink: 0; }
+  :global(.attach-icon) { color: var(--text-dim); flex-shrink: 0; }
   .currency-badge { font-size: 0.65rem; background: #1e2a3e; color: #60a5fa; border: 1px solid #2e3e5e; padding: 0.05rem 0.3rem; border-radius: 3px; vertical-align: middle; margin-left: 0.2rem; }
   .form-row-2 { display: flex; gap: 0.75rem; }
   .form-row-2 label { flex: 1; }
   .row-actions { display: flex; gap: 0.25rem; justify-content: flex-end; }
   .row-actions button { font-size: 0.75rem; padding: 0.2rem 0.4rem; background: #2a2a3e; border: none; color: #ccc; cursor: pointer; border-radius: 4px; }
   .row-actions .danger { color: #f87171; }
-  .empty { text-align: center; color: #555; padding: 2rem; }
+  .empty { text-align: center; color: var(--text-dim); padding: 2rem; }
   .error { color: #f87171; }
   .metodo { text-align: center; }
   .badge { display: inline-block; width: 18px; height: 18px; border-radius: 3px; font-size: 0.65rem; font-weight: 700; line-height: 18px; text-align: center; }
   .badge.cash { background: #166534; color: #4ade80; }
   .badge.card { background: #1e1b4b; color: #818cf8; }
-  .badge.other { background: #2a2a3e; color: #888; }
+  .badge.other { background: #2a2a3e; color: var(--text-muted); }
 
   /* Calendar */
   .cal-nav { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem; }
-  .cal-nav button { background: #1a1a2e; border: 1px solid #2e2e4e; color: #ccc; padding: 0.3rem 0.75rem; border-radius: 6px; cursor: pointer; font-size: 1.1rem; }
+  .cal-nav button { background: var(--bg-card); border: 1px solid var(--border); color: #ccc; padding: 0.3rem 0.75rem; border-radius: 6px; cursor: pointer; font-size: 1.1rem; }
   .cal-title { font-weight: 600; font-size: 1rem; }
   .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 1rem; }
-  .cal-dow { text-align: center; font-size: 0.75rem; color: #555; padding: 0.3rem 0; font-weight: 500; }
+  .cal-dow { text-align: center; font-size: 0.75rem; color: var(--text-dim); padding: 0.3rem 0; font-weight: 500; }
   .cal-cell { min-height: 64px; border-radius: 6px; padding: 0.3rem; position: relative; }
   .empty-cell { background: transparent; }
   .day-cell {
-    background: #1a1a2e; border: 1px solid transparent;
+    background: var(--bg-card); border: 1px solid transparent;
     cursor: pointer; display: flex; flex-direction: column; align-items: flex-start;
     transition: border-color 0.1s;
   }
-  .day-cell:hover { border-color: #2e2e4e; }
+  .day-cell:hover { border-color: var(--border); }
   .day-cell.today { border-color: #6366f1; }
   .day-cell.selected { background: #1e1e3e; border-color: #6366f1; }
-  .day-num { font-size: 0.82rem; color: #888; }
+  .day-num { font-size: 0.82rem; color: var(--text-muted); }
   .day-cell.today .day-num { color: #a5b4fc; font-weight: 700; }
   .dots { display: flex; gap: 3px; margin-top: auto; padding-top: 0.25rem; }
   .dot { width: 6px; height: 6px; border-radius: 50%; }
@@ -453,20 +497,20 @@
   .dot.expense { background: #f87171; }
 
   /* Day detail panel */
-  .day-detail { background: #1a1a2e; border-radius: 8px; padding: 1rem; }
+  .day-detail { background: var(--bg-card); border-radius: 8px; padding: 1rem; }
   .day-detail-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; font-weight: 600; font-size: 0.9rem; }
   .btn-sm-add { background: #6366f1; color: #fff; border: none; padding: 0.25rem 0.6rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
   .day-tx { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0; border-bottom: 1px solid #2e2e4e; font-size: 0.88rem; }
   .day-tx:last-child { border-bottom: none; }
   .day-tx-desc { flex: 1; }
-  .empty-day { color: #555; font-size: 0.85rem; }
-  .btn-edit-sm { background: none; border: none; color: #888; cursor: pointer; font-size: 0.9rem; padding: 0.1rem 0.3rem; }
+  .empty-day { color: var(--text-dim); font-size: 0.85rem; }
+  .btn-edit-sm { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.9rem; padding: 0.1rem 0.3rem; }
   .btn-del-sm { background: none; border: none; color: #f87171; cursor: pointer; font-size: 0.85rem; padding: 0.1rem 0.3rem; opacity: 0.6; }
   .btn-del-sm:hover { opacity: 1; }
 
   form { display: flex; flex-direction: column; gap: 0.75rem; }
   label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.85rem; color: #aaa; }
-  input, textarea { padding: 0.5rem 0.75rem; border: 1px solid #2e2e4e; border-radius: 6px; background: #0f0f1a; color: #e0e0f0; font-size: 0.9rem; }
+  input, textarea { padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-base); color: var(--text); font-size: 0.9rem; }
   textarea { resize: vertical; font-family: inherit; }
   .form-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem; }
   .btn-primary { background: #6366f1; color: #fff; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
@@ -482,17 +526,17 @@
   .btn-sm { padding: 0.4rem 0.75rem; font-size: 0.82rem; }
 
   /* Attachments */
-  .att-section { border: 1px solid #2e2e4e; border-radius: 7px; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem; }
+  .att-section { border: 1px solid var(--border); border-radius: 7px; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem; }
   .att-header { display: flex; align-items: center; justify-content: space-between; }
-  .att-title { display: flex; align-items: center; gap: 0.35rem; font-size: 0.82rem; color: #888; }
-  .btn-att { background: #1a1a2e; border: 1px solid #2e2e4e; color: #a5b4fc; padding: 0.25rem 0.6rem; border-radius: 5px; cursor: pointer; font-size: 0.78rem; }
+  .att-title { display: flex; align-items: center; gap: 0.35rem; font-size: 0.82rem; color: var(--text-muted); }
+  .btn-att { background: var(--bg-card); border: 1px solid var(--border); color: #a5b4fc; padding: 0.25rem 0.6rem; border-radius: 5px; cursor: pointer; font-size: 0.78rem; }
   .btn-att:hover { border-color: #6366f1; }
-  .att-hint { font-size: 0.78rem; color: #555; margin: 0.1rem 0; }
-  .att-row { display: flex; align-items: center; justify-content: space-between; background: #0f0f1a; border-radius: 5px; padding: 0.35rem 0.6rem; }
+  .att-hint { font-size: 0.78rem; color: var(--text-dim); margin: 0.1rem 0; }
+  .att-row { display: flex; align-items: center; justify-content: space-between; background: var(--bg-base); border-radius: 5px; padding: 0.35rem 0.6rem; }
   .att-name { font-size: 0.82rem; color: #ccc; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .att-actions { display: flex; gap: 0.25rem; flex-shrink: 0; }
-  .att-btn { background: none; border: none; color: #888; cursor: pointer; font-size: 0.78rem; padding: 0.15rem 0.4rem; border-radius: 3px; }
-  .att-btn:hover { color: #ccc; background: #1a1a2e; }
+  .att-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.78rem; padding: 0.15rem 0.4rem; border-radius: 3px; }
+  .att-btn:hover { color: #ccc; background: var(--bg-card); }
   .att-btn.danger { color: #f87171; }
   .att-btn.danger:hover { opacity: 0.8; }
 </style>

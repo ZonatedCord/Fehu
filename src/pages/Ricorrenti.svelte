@@ -194,28 +194,28 @@
   .error { color: #f87171; }
   .toast { display: flex; align-items: center; gap: 0.4rem; background: #1a2e1a; border: 1px solid #166534; color: #4ade80; padding: 0.5rem 0.75rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.85rem; }
   table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-  th { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid #2e2e4e; color: #888; font-weight: 500; font-size: 0.8rem; }
+  th { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid #2e2e4e; color: var(--text-muted); font-weight: 500; font-size: 0.8rem; }
   td { padding: 0.55rem 0.75rem; border-bottom: 1px solid #1a1a2e; }
   .inactive td { opacity: 0.45; }
-  .date { color: #888; font-size: 0.82rem; }
+  .date { color: var(--text-muted); font-size: 0.82rem; }
   .amount { font-weight: 600; }
   .income { color: #4ade80; }
   .expense { color: #f87171; }
-  .muted { color: #555; }
-  .toggle-btn { font-size: 0.72rem; padding: 0.15rem 0.45rem; background: #2a2a3e; border: 1px solid #3e3e5e; color: #888; cursor: pointer; border-radius: 4px; }
+  .muted { color: var(--text-dim); }
+  .toggle-btn { font-size: 0.72rem; padding: 0.15rem 0.45rem; background: #2a2a3e; border: 1px solid #3e3e5e; color: var(--text-muted); cursor: pointer; border-radius: 4px; }
   .toggle-btn.on { background: #166534; border-color: #166534; color: #4ade80; }
   .row-actions { display: flex; gap: 0.25rem; justify-content: flex-end; }
   .row-actions button { font-size: 0.75rem; padding: 0.25rem 0.4rem; background: #2a2a3e; border: none; color: #ccc; cursor: pointer; border-radius: 4px; display: flex; align-items: center; }
   .row-actions .danger { color: #f87171; }
   .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 2rem; gap: 0.75rem; }
   :global(.empty-icon) { color: #2e2e4e; }
-  .empty-title { font-size: 1rem; color: #666; margin: 0; }
+  .empty-title { font-size: 1rem; color: var(--text-dim); margin: 0; }
   .empty-hint { font-size: 0.85rem; color: #444; text-align: center; max-width: 400px; margin: 0; }
   form { display: flex; flex-direction: column; gap: 0.75rem; }
   .form-row { display: flex; gap: 0.75rem; }
   .form-row label { flex: 1; }
   label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.85rem; color: #aaa; }
-  input, select { padding: 0.5rem 0.75rem; border: 1px solid #2e2e4e; border-radius: 6px; background: #0f0f1a; color: #e0e0f0; font-size: 0.9rem; width: 100%; box-sizing: border-box; }
+  input, select { padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-base); color: var(--text); font-size: 0.9rem; width: 100%; box-sizing: border-box; }
   .form-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem; }
-  .form-actions button { padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; border: 1px solid #2e2e4e; background: #1a1a2e; color: #ccc; }
+  .form-actions button { padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; border: 1px solid var(--border); background: var(--bg-card); color: #ccc; }
 </style>

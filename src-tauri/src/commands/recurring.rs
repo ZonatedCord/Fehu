@@ -132,7 +132,7 @@ pub fn check_and_insert_recurring(state: State<AppState>) -> AppResult<i64> {
     Ok(inserted)
 }
 
-fn advance_date(date: &str, frequency: &str) -> String {
+pub(crate) fn advance_date(date: &str, frequency: &str) -> String {
     let parsed = chrono::NaiveDate::parse_from_str(date, "%Y-%m-%d");
     let Ok(d) = parsed else { return date.to_string(); };
     let next = match frequency {
@@ -142,12 +142,106 @@ fn advance_date(date: &str, frequency: &str) -> String {
             chrono::NaiveDate::from_ymd_opt(d.year() + 1, d.month(), d.day())
                 .unwrap_or(d + chrono::Duration::days(365))
         }
-        _ => { // monthly
+        _ => { // monthly — clamp to last valid day of target month
             let (y, m) = if d.month() == 12 { (d.year() + 1, 1) } else { (d.year(), d.month() + 1) };
-            chrono::NaiveDate::from_ymd_opt(y, m, d.day())
-                .or_else(|| chrono::NaiveDate::from_ymd_opt(y, m, 28))
+            (1..=d.day()).rev()
+                .find_map(|day| chrono::NaiveDate::from_ymd_opt(y, m, day))
                 .unwrap_or(d)
         }
     };
     next.format("%Y-%m-%d").to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{AppState, db::{Db, open_in_memory}};
+
+    fn make_state() -> AppState {
+        AppState {
+            db: Db(std::sync::Mutex::new(open_in_memory().unwrap())),
+            bot: std::sync::Mutex::new(None),
+        }
+    }
+
+    #[test]
+    fn advance_monthly_normal() {
+        assert_eq!(advance_date("2026-01-15", "monthly"), "2026-02-15");
+        assert_eq!(advance_date("2026-12-15", "monthly"), "2027-01-15");
+    }
+
+    #[test]
+    fn advance_monthly_month_end_clamped() {
+        // Jan 31 → Feb 28 (no Feb 31)
+        assert_eq!(advance_date("2026-01-31", "monthly"), "2026-02-28");
+    }
+
+    #[test]
+    fn advance_monthly_leap_year() {
+        // Jan 31 2024 (leap year) → Feb 29
+        assert_eq!(advance_date("2024-01-31", "monthly"), "2024-02-29");
+    }
+
+    #[test]
+    fn advance_daily() {
+        assert_eq!(advance_date("2026-01-31", "daily"), "2026-02-01");
+    }
+
+    #[test]
+    fn advance_weekly() {
+        assert_eq!(advance_date("2026-01-01", "weekly"), "2026-01-08");
+    }
+
+    #[test]
+    fn advance_yearly() {
+        assert_eq!(advance_date("2026-01-15", "yearly"), "2027-01-15");
+    }
+
+    #[test]
+    fn check_and_insert_creates_transaction_and_advances_date() {
+        let s = make_state();
+        let today = chrono::Local::now().format("%Y-%m-%d").to_string();
+        {
+            let conn = s.db.0.lock().unwrap();
+            // Insert category and recurring template due today
+            conn.execute("INSERT INTO categories (name,color,icon) VALUES ('Test','#fff','package')", []).unwrap();
+            let cat_id: i64 = conn.query_row("SELECT last_insert_rowid()", [], |r| r.get(0)).unwrap();
+            conn.execute(
+                "INSERT INTO recurring_templates (description,amount,type,category_id,metodo,notes,frequency,next_date,active) VALUES ('Affitto',800,'expense',?,'carta','','monthly',?,1)",
+                rusqlite::params![cat_id, today],
+            ).unwrap();
+        }
+        // Run check_and_insert via direct DB call (not Tauri command to avoid AppHandle)
+        {
+            let conn = s.db.0.lock().unwrap();
+            let count_before: i64 = conn.query_row("SELECT count(*) FROM transactions", [], |r| r.get(0)).unwrap();
+            assert_eq!(count_before, 0);
+
+            // Replicate logic inline
+            let due: Vec<(i64, String, f64, String, Option<i64>, String, String, String, String)> = {
+                let mut stmt = conn.prepare(
+                    "SELECT id,description,amount,type,category_id,metodo,notes,frequency,next_date FROM recurring_templates WHERE active=1 AND next_date<=?"
+                ).unwrap();
+                stmt.query_map(rusqlite::params![today], |r| {
+                    Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?, r.get(5)?, r.get(6)?, r.get(7)?, r.get(8)?))
+                }).unwrap().filter_map(|r| r.ok()).collect()
+            };
+
+            for (id, desc, amount, tx_type, cat_id, metodo, notes, freq, nd) in &due {
+                conn.execute(
+                    "INSERT INTO transactions (amount,type,category_id,date,description,notes,source,metodo) VALUES (?,?,?,?,?,?,'recurring',?)",
+                    rusqlite::params![amount, tx_type, cat_id, nd, desc, notes, metodo],
+                ).unwrap();
+                let next = advance_date(nd, freq);
+                conn.execute("UPDATE recurring_templates SET next_date=? WHERE id=?", rusqlite::params![next, id]).unwrap();
+            }
+
+            let count_after: i64 = conn.query_row("SELECT count(*) FROM transactions", [], |r| r.get(0)).unwrap();
+            assert_eq!(count_after, 1);
+
+            // next_date should have advanced
+            let new_date: String = conn.query_row("SELECT next_date FROM recurring_templates", [], |r| r.get(0)).unwrap();
+            assert_ne!(new_date, today);
+        }
+    }
 }

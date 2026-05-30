@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { invoke } from '@tauri-apps/api/core';
   import { api } from '../lib/api';
   import type { AppSettings } from '../lib/types';
 
@@ -8,6 +9,7 @@
     tesseract_path: '',
     currency_symbol: '€',
     onboarded: 'false',
+    theme: 'dark',
   });
   let saving = $state(false);
   let saved = $state(false);
@@ -16,6 +18,8 @@
   let botRunning = $state(false);
   let botMsg = $state('');
   let botBusy = $state(false);
+  let updateChecking = $state(false);
+  let updateMsg = $state('');
 
   onMount(async () => {
     try {
@@ -48,6 +52,23 @@
     } finally {
       saving = false;
     }
+  }
+
+  async function checkUpdate() {
+    updateChecking = true; updateMsg = '';
+    try {
+      // tauri-plugin-updater exposes check via JS plugin
+      const { check } = await import('@tauri-apps/plugin-updater');
+      const update = await check();
+      if (update) {
+        updateMsg = `Aggiornamento disponibile: v${update.version}. Download in corso…`;
+        await update.downloadAndInstall();
+        updateMsg = 'Aggiornamento installato. Riavvia Fehu.';
+      } else {
+        updateMsg = 'Sei già alla versione più recente.';
+      }
+    } catch (e: any) { updateMsg = `Errore: ${e.message ?? String(e)}`; }
+    finally { updateChecking = false; }
   }
 
   async function toggleBot() {
@@ -113,6 +134,14 @@
     </section>
 
     <section>
+      <h2>Aggiornamenti</h2>
+      <button class="btn-ghost" onclick={checkUpdate} disabled={updateChecking}>
+        {updateChecking ? 'Controllo…' : 'Controlla aggiornamenti'}
+      </button>
+      {#if updateMsg}<p class="update-msg">{updateMsg}</p>{/if}
+    </section>
+
+    <section>
       <h2>Telegram Bot</h2>
       <label>
         <span>Token bot</span>
@@ -153,20 +182,20 @@
   .page { max-width: 600px; }
   .page-header { margin-bottom: 2rem; }
   h1 { margin: 0 0 0.4rem; font-size: 1.5rem; }
-  .subtitle { color: #666; font-size: 0.875rem; margin: 0; }
+  .subtitle { color: var(--text-dim); font-size: 0.875rem; margin: 0; }
 
   .sections { display: flex; flex-direction: column; gap: 1.75rem; }
-  section { background: #1a1a2e; border-radius: 10px; padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; }
-  h2 { margin: 0 0 0.25rem; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #666; }
+  section { background: var(--bg-card); border-radius: 10px; padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; }
+  h2 { margin: 0 0 0.25rem; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); }
 
   label { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.9rem; color: #ccc; }
-  .field-hint { font-size: 0.78rem; color: #555; margin: 0; line-height: 1.4; }
+  .field-hint { font-size: 0.78rem; color: var(--text-dim); margin: 0; line-height: 1.4; }
   .input-row { display: flex; gap: 0.5rem; align-items: center; }
   .input-row input { flex: 1; }
 
   input {
-    padding: 0.5rem 0.75rem; border: 1px solid #2e2e4e;
-    border-radius: 6px; background: #0f0f1a; color: #e0e0f0;
+    padding: 0.5rem 0.75rem; border: 1px solid var(--border);
+    border-radius: 6px; background: var(--bg-base); color: var(--text);
     font-size: 0.9rem; width: 100%;
   }
   input:focus { outline: 1px solid #6366f1; }
@@ -179,18 +208,19 @@
   }
   .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
   .btn-ghost {
-    background: none; border: 1px solid #2e2e4e; color: #666;
+    background: none; border: 1px solid var(--border); color: var(--text-dim);
     padding: 0.5rem 0.75rem; border-radius: 6px; cursor: pointer;
     font-size: 0.82rem; white-space: nowrap;
   }
   .btn-ghost:hover { color: #aaa; border-color: #3e3e5e; }
   .error { color: #f87171; font-size: 0.85rem; margin: 0; }
-  code { background: #0f0f1a; padding: 0.1rem 0.35rem; border-radius: 3px; font-size: 0.8rem; }
+  code { background: var(--bg-base); padding: 0.1rem 0.35rem; border-radius: 3px; font-size: 0.8rem; }
   .bot-row { display: flex; align-items: center; gap: 0.75rem; }
   .btn-bot { background: #1a2e1a; border: 1px solid #166534; color: #4ade80; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
   .btn-bot.running { background: #2e1a1a; border-color: #7f1d1d; color: #f87171; }
   .btn-bot:disabled { opacity: 0.6; cursor: not-allowed; }
-  .bot-status { font-size: 0.78rem; color: #555; }
+  .bot-status { font-size: 0.78rem; color: var(--text-dim); }
   .bot-status.on { color: #4ade80; }
   .bot-msg { color: #4ade80; font-size: 0.82rem; margin: 0; }
+  .update-msg { color: var(--text-muted); font-size: 0.82rem; margin: 0.5rem 0 0; }
 </style>

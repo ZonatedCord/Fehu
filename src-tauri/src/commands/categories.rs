@@ -51,7 +51,10 @@ mod tests {
     use crate::{AppState, db::{Db, open_in_memory}};
 
     fn make_state() -> AppState {
-        AppState { db: Db(std::sync::Mutex::new(open_in_memory().unwrap())) }
+        AppState {
+            db: Db(std::sync::Mutex::new(open_in_memory().unwrap())),
+            bot: std::sync::Mutex::new(None),
+        }
     }
 
     #[test]
@@ -59,7 +62,7 @@ mod tests {
         let s = make_state();
         let conn = s.db.0.lock().unwrap();
         conn.execute("INSERT INTO categories (name,color,icon) VALUES ('Food','#ff0','utensils')", []).unwrap();
-        let count: i64 = conn.query_row("SELECT count(*) FROM categories", [], |r| r.get(0)).unwrap();
+        let count: i64 = conn.query_row("SELECT count(*) FROM categories WHERE name='Food'", [], |r| r.get(0)).unwrap();
         assert_eq!(count, 1);
     }
 

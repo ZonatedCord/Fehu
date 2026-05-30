@@ -1,10 +1,18 @@
 <script lang="ts">
   import {
     LayoutDashboard, ArrowUpDown, Tag, Database, Camera, PiggyBank,
-    Settings, Info, Calculator, RefreshCw,
+    Settings, Info, Calculator, RefreshCw, Sun, Moon,
   } from '@lucide/svelte';
-  import { currentPage } from '../lib/stores';
+  import { currentPage, theme } from '../lib/stores';
+  import { api } from '../lib/api';
   import type { Page } from '../lib/types';
+
+  function toggleTheme() {
+    const next = $theme === 'dark' ? 'light' : 'dark';
+    theme.set(next);
+    document.documentElement.setAttribute('data-theme', next);
+    api.setSetting('theme', next).catch(() => {});
+  }
 
   const mainNav: { label: string; page: Page; icon: typeof LayoutDashboard }[] = [
     { label: 'Dashboard',    page: 'dashboard',    icon: LayoutDashboard },
@@ -51,15 +59,20 @@
       {item.label}
     </button>
   {/each}
+
+  <button class="theme-btn" onclick={toggleTheme} title="Cambia tema">
+    {#if $theme === 'dark'}<Sun size={14} />{:else}<Moon size={14} />{/if}
+  </button>
 </nav>
 
 <style>
   .sidebar {
     width: 180px; min-height: 100vh;
-    background: #111; color: #eee;
+    background: var(--sidebar-bg); color: var(--text);
     display: flex; flex-direction: column;
     padding: 1rem 0.75rem; gap: 0.25rem;
   }
+  .theme-btn { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--text-muted); cursor: pointer; margin-top: 0.25rem; align-self: flex-start; }
   .logo {
     display: flex; align-items: center; gap: 0.5rem;
     padding: 0.5rem 0.5rem 1.25rem;

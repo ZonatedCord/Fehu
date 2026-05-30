@@ -23,7 +23,7 @@
     display: flex; align-items: center; justify-content: center; z-index: 100;
   }
   .modal {
-    background: #1a1a2e; border-radius: 10px;
+    background: var(--bg-card); border-radius: 10px;
     min-width: 380px; max-width: 520px; width: 90%;
     box-shadow: 0 20px 60px rgba(0,0,0,0.5);
   }
@@ -31,7 +31,7 @@
     display: flex; align-items: center; justify-content: space-between;
     padding: 1rem 1.25rem 0.75rem; border-bottom: 1px solid #2e2e4e;
   }
-  h2 { margin: 0; font-size: 1rem; color: #e0e0f0; }
-  .header button { background: none; border: none; color: #888; cursor: pointer; font-size: 1rem; }
+  h2 { margin: 0; font-size: 1rem; color: var(--text); }
+  .header button { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; }
   .body { padding: 1.25rem; }
 </style>

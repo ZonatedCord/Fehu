@@ -98,22 +98,22 @@
   h1 { margin: 0; font-size: 1.5rem; }
   .btn-primary { display: inline-flex; align-items: center; gap: 0.3rem; background: #6366f1; color: #fff; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem; }
-  .card { background: #1a1a2e; border-radius: 8px; padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.5rem; }
+  .card { background: var(--bg-card); border-radius: 8px; padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.5rem; }
   .swatch { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
   .cat-icon { display: flex; align-items: center; }
   .name { flex: 1; font-size: 0.9rem; }
   .actions { display: flex; gap: 0.25rem; }
   .actions button { font-size: 0.75rem; padding: 0.2rem 0.4rem; background: #2a2a3e; border: none; color: #ccc; cursor: pointer; border-radius: 4px; }
   .actions .danger { color: #f87171; }
-  .budget-badge { font-size: 0.7rem; color: #888; background: #111120; border: 1px solid #2e2e4e; padding: 0.1rem 0.35rem; border-radius: 4px; white-space: nowrap; }
+  .budget-badge { font-size: 0.7rem; color: var(--text-muted); background: var(--bg-card2); border: 1px solid var(--border); padding: 0.1rem 0.35rem; border-radius: 4px; white-space: nowrap; }
   .error { color: #f87171; }
   .empty-state { display: flex; flex-direction: column; align-items: center; padding: 4rem 2rem; gap: 0.5rem; }
   :global(.empty-icon) { color: #2e2e4e; }
-  .empty-title { color: #555; font-size: 1rem; margin: 0; }
+  .empty-title { color: var(--text-dim); font-size: 1rem; margin: 0; }
   .empty-hint { color: #3a3a4e; font-size: 0.85rem; margin: 0; }
   form { display: flex; flex-direction: column; gap: 0.75rem; }
   label { display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.85rem; color: #aaa; }
-  input { padding: 0.5rem 0.75rem; border: 1px solid #2e2e4e; border-radius: 6px; background: #0f0f1a; color: #e0e0f0; font-size: 0.9rem; }
+  input { padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-base); color: var(--text); font-size: 0.9rem; }
   input[type="color"] { padding: 0.1rem; height: 36px; cursor: pointer; }
   .form-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem; }
 </style>

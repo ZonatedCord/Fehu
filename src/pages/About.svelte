@@ -89,25 +89,25 @@
     color: #a5b4fc; flex-shrink: 0;
   }
   h1 { margin: 0 0 0.25rem; font-size: 2rem; letter-spacing: 0.04em; }
-  .tagline { margin: 0 0 0.3rem; color: #666; font-size: 0.9rem; }
+  .tagline { margin: 0 0 0.3rem; color: var(--text-dim); font-size: 0.9rem; }
   .etymology { margin: 0 0 0.5rem; color: #444; font-size: 0.78rem; line-height: 1.5; }
   .version {
-    display: inline-block; background: #1a1a2e;
-    color: #666; font-size: 0.78rem; padding: 0.15rem 0.5rem;
-    border-radius: 4px; border: 1px solid #2e2e4e;
+    display: inline-block; background: var(--bg-card);
+    color: var(--text-dim); font-size: 0.78rem; padding: 0.15rem 0.5rem;
+    border-radius: 4px; border: 1px solid var(--border);
   }
 
   .sections { display: flex; flex-direction: column; gap: 1.5rem; }
-  section { background: #1a1a2e; border-radius: 10px; padding: 1.25rem; }
+  section { background: var(--bg-card); border-radius: 10px; padding: 1.25rem; }
   h2 {
     margin: 0 0 1rem; font-size: 0.78rem; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.08em; color: #555;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim);
   }
 
   .links { display: flex; gap: 0.75rem; flex-wrap: wrap; }
   .link-btn {
     display: flex; align-items: center; gap: 0.4rem;
-    background: #0f0f1a; border: 1px solid #2e2e4e;
+    background: var(--bg-base); border: 1px solid var(--border);
     color: #a5b4fc; padding: 0.5rem 0.9rem;
     border-radius: 6px; cursor: pointer; font-size: 0.875rem;
     transition: border-color 0.15s;
@@ -122,8 +122,8 @@
     display: flex; justify-content: space-between; align-items: baseline;
     font-size: 0.875rem;
   }
-  .stack-label { color: #e0e0f0; font-weight: 500; }
-  .stack-desc { color: #555; font-size: 0.8rem; }
+  .stack-label { color: var(--text); font-weight: 500; }
+  .stack-desc { color: var(--text-dim); font-size: 0.8rem; }
 
   .principles {
     margin: 0; padding: 0; list-style: none;

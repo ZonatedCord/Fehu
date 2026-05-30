@@ -16,6 +16,8 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             let db_path = app
                 .path()
@@ -29,6 +31,31 @@ pub fn run() {
                 db: Db(std::sync::Mutex::new(conn)),
                 bot: std::sync::Mutex::new(None),
             });
+
+            // Background thread: poll bot_notifications every 3s and show native notifications
+            let app_handle = app.handle().clone();
+            std::thread::spawn(move || {
+                loop {
+                    std::thread::sleep(std::time::Duration::from_secs(3));
+                    let state = app_handle.state::<AppState>();
+                    let conn = state.db.0.lock().unwrap();
+                    let pending: Vec<(i64, String, String)> = (|| {
+                        let mut stmt = conn.prepare(
+                            "SELECT id, title, body FROM bot_notifications WHERE shown=0 ORDER BY id LIMIT 10"
+                        ).ok()?;
+                        let rows = stmt.query_map([], |r| {
+                            Ok((r.get::<_, i64>(0)?, r.get::<_, String>(1)?, r.get::<_, String>(2)?))
+                        }).ok()?.filter_map(|r| r.ok()).collect::<Vec<_>>();
+                        Some(rows)
+                    })().unwrap_or_default();
+                    for (id, title, body) in &pending {
+                        use tauri_plugin_notification::NotificationExt;
+                        let _ = app_handle.notification().builder().title(title).body(body).show();
+                        let _ = conn.execute("UPDATE bot_notifications SET shown=1 WHERE id=?1", [id]);
+                    }
+                }
+            });
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

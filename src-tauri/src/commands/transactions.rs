@@ -24,6 +24,7 @@ pub fn list_transactions(
     start_date: Option<String>,
     end_date: Option<String>,
     category_id: Option<i64>,
+    search_text: Option<String>,
 ) -> AppResult<Vec<Transaction>> {
     let conn = state.db.0.lock().unwrap();
     let mut stmt = conn.prepare(
@@ -35,9 +36,14 @@ pub fn list_transactions(
          WHERE (?1 IS NULL OR t.date >= ?1)
            AND (?2 IS NULL OR t.date <= ?2)
            AND (?3 IS NULL OR t.category_id = ?3)
+           AND (?4 IS NULL OR (
+               t.description LIKE '%' || ?4 || '%'
+               OR t.notes LIKE '%' || ?4 || '%'
+               OR c.name LIKE '%' || ?4 || '%'
+           ))
          ORDER BY t.date DESC, t.id DESC",
     )?;
-    let rows = stmt.query_map(params![start_date, end_date, category_id], Transaction::from_row)?;
+    let rows = stmt.query_map(params![start_date, end_date, category_id, search_text], Transaction::from_row)?;
     Ok(rows.collect::<rusqlite::Result<_>>()?)
 }
 
@@ -103,7 +109,10 @@ mod tests {
     use crate::{AppState, db::{Db, open_in_memory}};
 
     fn make_state() -> AppState {
-        AppState { db: Db(std::sync::Mutex::new(open_in_memory().unwrap())) }
+        AppState {
+            db: Db(std::sync::Mutex::new(open_in_memory().unwrap())),
+            bot: std::sync::Mutex::new(None),
+        }
     }
 
     #[test]

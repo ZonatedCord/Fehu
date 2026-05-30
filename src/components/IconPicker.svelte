@@ -47,8 +47,8 @@
   .picker { display: flex; flex-wrap: wrap; gap: 0.25rem; }
   button {
     width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
-    background: #0f0f1a; border: 1px solid #2e2e4e; border-radius: 6px;
-    color: #888; cursor: pointer; transition: all 0.1s;
+    background: var(--bg-base); border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text-muted); cursor: pointer; transition: all 0.1s;
   }
   button:hover { border-color: #6366f1; color: #a5b4fc; }
   button.selected { border-color: #6366f1; background: #1e1e3e; color: #a5b4fc; }

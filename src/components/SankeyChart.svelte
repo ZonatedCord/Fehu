@@ -89,5 +89,5 @@
 {/if}
 
 <style>
-  .muted { color: #555; font-size: 0.85rem; }
+  .muted { color: var(--text-dim); font-size: 0.85rem; }
 </style>

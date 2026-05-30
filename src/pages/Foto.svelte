@@ -241,8 +241,8 @@
   .page-header { margin-bottom: 1.25rem; }
   h1 { margin: 0 0 0.2rem; font-size: 1.5rem; }
   h2 { margin: 0 0 1rem; font-size: 0.95rem; color: #aaa; font-weight: 500; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-  .badge-offline { font-size: 0.72rem; background: #1a1a2e; border: 1px solid #2e2e4e; color: #555; padding: 0.1rem 0.45rem; border-radius: 4px; font-weight: 400; }
-  .hint { color: #666; font-size: 0.85rem; margin: 0; }
+  .badge-offline { font-size: 0.72rem; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-dim); padding: 0.1rem 0.45rem; border-radius: 4px; font-weight: 400; }
+  .hint { color: var(--text-dim); font-size: 0.85rem; margin: 0; }
 
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start; }
 
@@ -260,24 +260,24 @@
 
   .pick-area { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
   .error { color: #f87171; font-size: 0.85rem; margin: 0.25rem 0; }
-  .hint-error { color: #888; font-size: 0.8rem; margin: 0; }
-  code { background: #1a1a2e; padding: 0.15rem 0.4rem; border-radius: 3px; }
+  .hint-error { color: var(--text-muted); font-size: 0.8rem; margin: 0; }
+  code { background: var(--bg-card); padding: 0.15rem 0.4rem; border-radius: 3px; }
 
   /* Right col */
   .right-col { position: sticky; top: 1rem; }
   .right-empty { display: flex; align-items: center; justify-content: center; min-height: 340px; color: #333; font-size: 0.9rem; border: 2px dashed #1e1e2e; border-radius: 10px; }
-  .form-section { background: #1a1a2e; border-radius: 10px; padding: 1.25rem; }
-  .tipo-toggle { display: flex; margin-bottom: 1rem; border-radius: 6px; overflow: hidden; border: 1px solid #2e2e4e; }
-  .tipo-toggle button { flex: 1; padding: 0.5rem; border: none; background: #0f0f1a; color: #888; cursor: pointer; font-size: 0.9rem; }
+  .form-section { background: var(--bg-card); border-radius: 10px; padding: 1.25rem; }
+  .tipo-toggle { display: flex; margin-bottom: 1rem; border-radius: 6px; overflow: hidden; border: 1px solid var(--border); }
+  .tipo-toggle button { flex: 1; padding: 0.5rem; border: none; background: var(--bg-base); color: var(--text-muted); cursor: pointer; font-size: 0.9rem; }
   .tipo-toggle button.active { background: #6366f1; color: #fff; }
 
   form { display: flex; flex-direction: column; gap: 0.75rem; }
   label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.85rem; color: #aaa; }
-  input, select { padding: 0.5rem 0.75rem; border: 1px solid #2e2e4e; border-radius: 6px; background: #0f0f1a; color: #e0e0f0; font-size: 0.9rem; }
+  input, select { padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-base); color: var(--text); font-size: 0.9rem; }
   .btn-primary { background: #6366f1; color: #fff; border: none; padding: 0.55rem 1.1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
   .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-  .btn-secondary { background: #1a1a2e; border: 1px solid #2e2e4e; color: #ccc; padding: 0.55rem 1.1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
-  .btn-ghost { background: none; border: none; color: #555; padding: 0.55rem 0.5rem; cursor: pointer; font-size: 0.85rem; }
+  .btn-secondary { background: var(--bg-card); border: 1px solid var(--border); color: #ccc; padding: 0.55rem 1.1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
+  .btn-ghost { background: none; border: none; color: var(--text-dim); padding: 0.55rem 0.5rem; cursor: pointer; font-size: 0.85rem; }
   .btn-ghost:hover { color: #f87171; }
   .full-width { width: 100%; margin-top: 0.25rem; }
   .cat-row { display: flex; gap: 0.4rem; align-items: center; }

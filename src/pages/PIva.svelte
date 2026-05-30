@@ -273,16 +273,16 @@
   .page { max-width: 900px; }
   .page-header { margin-bottom: 1.5rem; }
   h1 { margin: 0 0 0.3rem; font-size: 1.5rem; }
-  .subtitle { color: #666; font-size: 0.875rem; margin: 0; }
+  .subtitle { color: var(--text-dim); font-size: 0.875rem; margin: 0; }
 
   /* Tabs */
   .tabs {
     display: flex; gap: 0; margin-bottom: 1.75rem;
-    background: #1a1a2e; border-radius: 8px; padding: 0.25rem;
+    background: var(--bg-card); border-radius: 8px; padding: 0.25rem;
     width: fit-content;
   }
   .tabs button {
-    background: none; border: none; color: #666;
+    background: none; border: none; color: var(--text-dim);
     padding: 0.5rem 1.1rem; cursor: pointer; border-radius: 6px;
     font-size: 0.875rem; transition: background 0.15s, color 0.15s;
   }
@@ -292,33 +292,33 @@
 
   /* Inputs */
   .inputs {
-    background: #1a1a2e; border-radius: 10px; padding: 1.25rem;
+    background: var(--bg-card); border-radius: 10px; padding: 1.25rem;
     display: flex; flex-direction: column; gap: 1rem;
   }
   label { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.85rem; color: #aaa; }
-  label span { color: #888; }
+  label span { color: var(--text-muted); }
   .input-row { display: flex; align-items: center; gap: 0.5rem; }
-  .unit { color: #555; font-size: 0.85rem; }
+  .unit { color: var(--text-dim); font-size: 0.85rem; }
   .unit-hint { color: #4ade80; font-size: 0.78rem; white-space: nowrap; }
 
   input[type="number"], select {
-    padding: 0.5rem 0.75rem; border: 1px solid #2e2e4e;
-    border-radius: 6px; background: #0f0f1a; color: #e0e0f0;
+    padding: 0.5rem 0.75rem; border: 1px solid var(--border);
+    border-radius: 6px; background: var(--bg-base); color: var(--text);
     font-size: 0.9rem; width: 100%;
   }
   input[type="number"] { width: 140px; }
   input:focus, select:focus { outline: 1px solid #6366f1; }
 
   .formula-box {
-    background: #0f0f1a; border: 1px solid #1e1e2e;
+    background: var(--bg-base); border: 1px solid var(--border2);
     border-radius: 6px; padding: 0.75rem; margin-top: 0.25rem;
   }
-  .formula-title { font-size: 0.72rem; color: #555; margin: 0 0 0.35rem; text-transform: uppercase; letter-spacing: 0.06em; }
-  .formula { font-size: 0.78rem; color: #666; margin: 0; line-height: 1.6; }
+  .formula-title { font-size: 0.72rem; color: var(--text-dim); margin: 0 0 0.35rem; text-transform: uppercase; letter-spacing: 0.06em; }
+  .formula { font-size: 0.78rem; color: var(--text-dim); margin: 0; line-height: 1.6; }
 
   .regime-note {
-    background: #12122a; border: 1px solid #2e2e4e; border-radius: 6px;
-    padding: 0.65rem 0.85rem; font-size: 0.8rem; color: #666; line-height: 1.5;
+    background: #12122a; border: 1px solid var(--border); border-radius: 6px;
+    padding: 0.65rem 0.85rem; font-size: 0.8rem; color: var(--text-dim); line-height: 1.5;
   }
 
   /* Scenarios */
@@ -327,18 +327,18 @@
     align-self: start;
   }
   .scenario-card {
-    background: #1a1a2e; border: 1px solid #2e2e4e;
+    background: var(--bg-card); border: 1px solid var(--border);
     border-radius: 10px; padding: 1.1rem;
   }
   .scenario-card.base { border-color: #4e4e8e; }
 
-  .scenario-label { font-size: 0.75rem; color: #555; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.3rem; }
-  .scenario-fatturato { font-size: 1.35rem; font-weight: 700; color: #e0e0f0; margin-bottom: 0.85rem; }
+  .scenario-label { font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.3rem; }
+  .scenario-fatturato { font-size: 1.35rem; font-weight: 700; color: var(--text); margin-bottom: 0.85rem; }
 
   .scenario-rows { display: flex; flex-direction: column; gap: 0.45rem; }
   .sc-row {
     display: flex; justify-content: space-between;
-    font-size: 0.85rem; color: #888;
+    font-size: 0.85rem; color: var(--text-muted);
   }
   .sc-row.netto { border-top: 1px solid #2e2e4e; padding-top: 0.45rem; margin-top: 0.1rem; color: #ccc; font-weight: 600; }
   .negative { color: #f87171; }

@@ -10,7 +10,7 @@ export const api = {
   deleteCategory: (id: number) => invoke<void>('delete_category', { id }),
   getBudgetAlerts: (month: string) => invoke<BudgetAlert[]>('get_budget_alerts', { month }),
 
-  listTransactions: (filters?: { start_date?: string; end_date?: string; category_id?: number }) =>
+  listTransactions: (filters?: { start_date?: string; end_date?: string; category_id?: number; search_text?: string }) =>
     invoke<Transaction[]>('list_transactions', filters ?? {}),
   createTransaction: (input: TransactionInput) =>
     invoke<Transaction>('create_transaction', { input }),

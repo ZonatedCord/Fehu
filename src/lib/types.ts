@@ -114,6 +114,7 @@ export interface AppSettings {
   tesseract_path: string;
   currency_symbol: string;
   onboarded: string;
+  theme: string;
 }
 
 export interface DepsStatus {

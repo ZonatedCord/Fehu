@@ -238,22 +238,22 @@
   .page { max-width: 1000px; }
   .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
   h1 { margin: 0; font-size: 1.5rem; }
-  .btn-refresh { background: #1a1a2e; border: 1px solid #2e2e4e; color: #888; padding: 0.35rem 0.75rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
+  .btn-refresh { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted); padding: 0.35rem 0.75rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
   .kpi-row { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
-  .kpi { flex: 1; min-width: 160px; background: #1a1a2e; border-radius: 8px; padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.25rem; }
-  .kpi-label { font-size: 0.8rem; color: #888; text-transform: uppercase; letter-spacing: 0.05em; }
+  .kpi { flex: 1; min-width: 160px; background: var(--bg-card); border-radius: 8px; padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.25rem; }
+  .kpi-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
   .kpi-value { font-size: 1.5rem; font-weight: 700; }
   .income .kpi-value { color: #4ade80; }
   .expense .kpi-value { color: #f87171; }
   .balance .kpi-value { color: #a5b4fc; }
   .charts-row { display: flex; gap: 1rem; flex-wrap: wrap; }
-  .chart-card { background: #1a1a2e; border-radius: 8px; padding: 1.25rem; flex: 1; min-width: 280px; }
+  .chart-card { background: var(--bg-card); border-radius: 8px; padding: 1.25rem; flex: 1; min-width: 280px; }
   .chart-card.wide { flex: 2; }
   .chart-card.full { flex: 1 0 100%; }
   h2 { margin: 0 0 1rem; font-size: 0.95rem; color: #aaa; font-weight: 500; }
   .error { color: #f87171; }
-  .muted { color: #555; }
-  .dash-empty { display: flex; flex-direction: column; align-items: center; padding: 4rem; gap: 0.75rem; color: #555; }
+  .muted { color: var(--text-dim); }
+  .dash-empty { display: flex; flex-direction: column; align-items: center; padding: 4rem; gap: 0.75rem; color: var(--text-dim); }
   :global(.dash-empty-icon) { color: #2e2e4e; }
   .patrimonio-row { margin-top: -0.5rem; }
   .kpi.cash .kpi-value { color: #4ade80; }
@@ -261,33 +261,33 @@
   .kpi.total .kpi-value { color: #c084fc; }
   .kpi-value.negative { color: #f87171 !important; }
   .rettifica-link { text-align: right; margin-bottom: 1rem; }
-  .btn-ghost-small { background: none; border: none; color: #555; cursor: pointer; font-size: 0.78rem; padding: 0.25rem 0.5rem; text-decoration: underline; }
-  .btn-ghost-small:hover { color: #888; }
-  .rettifiche-list { background: #111120; border: 1px solid #1e1e2e; border-radius: 8px; padding: 0.5rem; margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.15rem; }
+  .btn-ghost-small { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 0.78rem; padding: 0.25rem 0.5rem; text-decoration: underline; }
+  .btn-ghost-small:hover { color: var(--text-muted); }
+  .rettifiche-list { background: var(--bg-card2); border: 1px solid var(--border2); border-radius: 8px; padding: 0.5rem; margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.15rem; }
   .rett-row { display: flex; align-items: center; gap: 0.6rem; padding: 0.35rem 0.5rem; border-radius: 4px; font-size: 0.82rem; }
-  .rett-row:hover { background: #1a1a2e; }
-  .rett-date { color: #666; width: 90px; flex-shrink: 0; }
+  .rett-row:hover { background: var(--bg-card); }
+  .rett-date { color: var(--text-dim); width: 90px; flex-shrink: 0; }
   .badge-metodo { width: 18px; height: 18px; border-radius: 3px; font-size: 0.65rem; font-weight: 700; line-height: 18px; text-align: center; flex-shrink: 0; }
   .badge-metodo.cash { background: #166534; color: #4ade80; }
   .badge-metodo.card { background: #1e1b4b; color: #818cf8; }
   .rett-amount { font-weight: 600; width: 90px; flex-shrink: 0; }
   .rett-amount.pos { color: #4ade80; }
   .rett-amount.neg { color: #f87171; }
-  .rett-note { flex: 1; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .btn-del-rett { background: none; border: none; color: #555; cursor: pointer; padding: 0.1rem 0.25rem; border-radius: 3px; display: flex; align-items: center; }
+  .rett-note { flex: 1; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .btn-del-rett { background: none; border: none; color: var(--text-dim); cursor: pointer; padding: 0.1rem 0.25rem; border-radius: 3px; display: flex; align-items: center; }
   .btn-del-rett:hover { color: #f87171; }
   .backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 100; }
-  .modal { background: #1a1a2e; border-radius: 10px; padding: 1.5rem; width: 360px; max-width: 95vw; }
+  .modal { background: var(--bg-card); border-radius: 10px; padding: 1.5rem; width: 360px; max-width: 95vw; }
   .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
-  .modal-header h2 { margin: 0; font-size: 1.1rem; color: #e0e0f0; }
-  .btn-close { background: none; border: none; color: #888; cursor: pointer; font-size: 1.1rem; }
+  .modal-header h2 { margin: 0; font-size: 1.1rem; color: var(--text); }
+  .btn-close { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem; }
   .modal-body { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.25rem; }
   .modal-body label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.85rem; color: #999; }
-  .modal-body input, .modal-body select { padding: 0.5rem 0.75rem; border: 1px solid #2e2e4e; border-radius: 6px; background: #0f0f1a; color: #e0e0f0; font-size: 0.9rem; }
+  .modal-body input, .modal-body select { padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-base); color: var(--text); font-size: 0.9rem; }
   .modal-footer { display: flex; gap: 0.5rem; justify-content: flex-end; }
   .btn-primary { background: #6366f1; color: #fff; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
   .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-  .btn-ghost { background: none; border: none; color: #666; cursor: pointer; padding: 0.5rem; }
+  .btn-ghost { background: none; border: none; color: var(--text-dim); cursor: pointer; padding: 0.5rem; }
   .budget-alerts { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1.25rem; }
   .budget-alert { display: flex; align-items: center; gap: 0.6rem; background: #1a0f0f; border: 1px solid #7f1d1d; border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.85rem; }
   .alert-icon { color: #f87171; font-weight: 700; font-size: 1rem; }

@@ -78,7 +78,9 @@
               <XCircle size={20} color="#f87171" />
               <div>
                 <span class="dep-name">Tesseract OCR — non trovato</span>
-                <code class="install-cmd">brew install tesseract tesseract-lang</code>
+                <code class="install-cmd">macOS: brew install tesseract tesseract-lang</code>
+                <code class="install-cmd">Windows: scarica da github.com/UB-Mannheim/tesseract</code>
+                <span class="dep-hint">Percorso Windows default: C:\Program Files\Tesseract-OCR\</span>
               </div>
             {/if}
           </div>
@@ -129,7 +131,7 @@
     z-index: 100; backdrop-filter: blur(4px);
   }
   .card {
-    background: #1a1a2e; border: 1px solid #2e2e4e;
+    background: var(--bg-card); border: 1px solid var(--border);
     border-radius: 14px; padding: 2.5rem 2rem;
     width: 100%; max-width: 480px;
     display: flex; flex-direction: column; gap: 1.25rem;
@@ -146,12 +148,12 @@
   .rune { font-size: 2.5rem; color: #a5b4fc; }
   .rune.success { color: #4ade80; }
   h1 { margin: 0; font-size: 1.4rem; }
-  .body { margin: 0; color: #888; font-size: 0.9rem; line-height: 1.6; }
-  .body-small { margin: 0; color: #666; font-size: 0.82rem; line-height: 1.6; }
+  .body { margin: 0; color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; }
+  .body-small { margin: 0; color: var(--text-dim); font-size: 0.82rem; line-height: 1.6; }
 
   .feature-list {
     margin: 0; padding: 0 0 0 1.2rem;
-    color: #888; font-size: 0.875rem;
+    color: var(--text-muted); font-size: 0.875rem;
     display: flex; flex-direction: column; gap: 0.35rem;
   }
 
@@ -161,11 +163,11 @@
     font-size: 0.875rem;
   }
   .dep-name { color: #ccc; display: block; }
-  .dep-version { color: #555; font-size: 0.78rem; display: block; margin-top: 0.15rem; }
-  .dep-hint { color: #555; font-size: 0.78rem; display: block; margin-top: 0.15rem; }
+  .dep-version { color: var(--text-dim); font-size: 0.78rem; display: block; margin-top: 0.15rem; }
+  .dep-hint { color: var(--text-dim); font-size: 0.78rem; display: block; margin-top: 0.15rem; }
   .install-cmd {
     display: block; margin-top: 0.25rem;
-    background: #0f0f1a; color: #a5b4fc;
+    background: var(--bg-base); color: #a5b4fc;
     padding: 0.2rem 0.5rem; border-radius: 4px;
     font-size: 0.8rem; font-family: monospace;
   }
@@ -178,7 +180,7 @@
   }
   .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
   .btn-ghost {
-    background: none; border: 1px solid #2e2e4e; color: #666;
+    background: none; border: 1px solid var(--border); color: var(--text-dim);
     padding: 0.65rem 1rem; border-radius: 7px; cursor: pointer; font-size: 0.9rem;
   }
   .btn-ghost:hover { color: #aaa; }
