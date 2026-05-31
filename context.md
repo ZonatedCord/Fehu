@@ -10,16 +10,20 @@ Track progress across conversations. Update at end of each session.
 |-------|------|
 | Desktop | Tauri 2 + Svelte 5 + TypeScript + Vite |
 | Backend | Rust (lib.rs + commands/) |
-| Storage | SQLite via rusqlite (bundled-full), WAL mode |
+| Storage | SQLite via rusqlite (bundled-full), WAL mode, PRAGMA user_version migrations |
 | OCR | Tesseract 5 (`brew install tesseract tesseract-lang`) |
 | LLM | Ollama HTTP API — `qwen2.5-coder:7b` — opzionale |
 | Charting | Chart.js 4 + SankeyChart custom |
 | Icons | `@lucide/svelte` v1.x |
 | URL open | `@tauri-apps/plugin-opener` (`openUrl`, `openPath`) |
 | File pick | `@tauri-apps/plugin-dialog` (`open`) |
+| Notifications | `tauri-plugin-notification` |
+| Auto-update | `tauri-plugin-updater` (keypair da generare — vedi sotto) |
+| Telegram bot | Python aiogram 3.x sidecar — `sidecar/fehu_bot.py` |
 
-**Note:** `@tauri-apps/plugin-shell` NON è installato. Usare `plugin-opener`.  
+**Note:** `@tauri-apps/plugin-shell` NON installato. Usare `plugin-opener`.
 **Note:** Lucide non ha `Github` (brand icon rimosso). Usare `ExternalLink`.
+**Note:** Python venv per bot in `sidecar/.venv/` — aiogram + aiosqlite installati su questa macchina.
 
 ---
 
@@ -28,87 +32,104 @@ Track progress across conversations. Update at end of each session.
 ```
 src/
   routes/+page.svelte        # App shell: layout + router (currentPage store) + Onboarding overlay
+                             # CSS vars sistema tema; keyboard shortcuts Cmd+N/F/,; fade 110ms
   lib/
-    types.ts                 # Tutti i tipi TS (Page, Transaction, Category, Goal, ...)
+    types.ts                 # Page, Transaction, Category, Goal, BudgetAlert, RecurringTemplate, ...
     api.ts                   # Wrapper invoke() per tutti i comandi Tauri
-    stores.ts                # currentPage writable store
+    stores.ts                # currentPage, keyboardAction, theme writable stores
   components/
-    Sidebar.svelte           # Nav: mainNav (7 voci) + separatore + utilityNav (2 voci)
-    Onboarding.svelte        # Wizard primo avvio (3 step), overlay fullscreen
+    Sidebar.svelte           # mainNav (8) + utilityNav (2) + "Tema chiaro/scuro" toggle nav item
+    Onboarding.svelte        # Wizard primo avvio
     Modal.svelte             # Modal generico riusabile
-    SankeyChart.svelte       # Sankey flow chart
-    CategoryIcon.svelte      # Icona categoria
-    IconPicker.svelte        # Picker icone
+    SankeyChart.svelte
+    CategoryIcon.svelte
+    IconPicker.svelte
   pages/
-    Dashboard.svelte         # KPI, charts (bar, doughnut, sankey)
-    Transactions.svelte      # Lista + calendario + modal CRUD + allegati file
-    Categories.svelte        # CRUD categorie + icon/color picker
-    Export.svelte            # Import XLSX, export CSV/XLSX
-    Foto.svelte              # OCR pipeline: drag-drop → analizza → salva tx
-    Obiettivi.svelte         # Goals con progress bar, versamenti
-    Settings.svelte          # Impostazioni (ollama_url, tesseract_path, currency_symbol)
-    About.svelte             # Info app, nome runa, autore, stack, link
-    PIva.svelte              # Calcolatore P.IVA (forfettario/ordinario/semplificato)
+    Dashboard.svelte         # KPI, charts, rettifiche, budget alerts
+    Transactions.svelte      # Lista + calendario + CRUD + allegati + search + date range filter
+    Categories.svelte        # CRUD + budget_limit per categoria
+    Export.svelte            # Import XLSX, export CSV/XLSX, backup/restore DB
+    Foto.svelte              # OCR pipeline
+    Obiettivi.svelte         # Goals con progress bar
+    Ricorrenti.svelte        # Template ricorrenti + auto-insert
+    Settings.svelte          # Config + Telegram bot toggle + check aggiornamenti
+    About.svelte
+    PIva.svelte              # Calcolatore forfettario/ordinario/semplificato
+
+sidecar/
+  fehu_bot.py               # Telegram bot: /start, /report [mese], /foto (OCR aiogram FSM)
+  requirements.txt
+  .venv/                    # virtualenv con aiogram 3.28 + aiosqlite (gitignored)
 
 src-tauri/src/
-  lib.rs                     # Tauri builder + setup DB + invoke_handler (tutti i comandi)
-  models.rs                  # Struct Rust: Category, Transaction, Goal, ReceiptData, ...
-  error.rs                   # AppError enum (Db, NotFound, Validation) + AppResult<T>
-  db/mod.rs                  # open(), migrate() — schema SQLite completo
+  lib.rs                     # setup + background thread notifiche (poll bot_notifications ogni 3s)
+  models.rs
+  error.rs
+  db/mod.rs                  # MIGRATIONS[6] + PRAGMA user_version
   commands/
-    categories.rs            # list/create/update/delete_category
-    transactions.rs          # list/create/update/delete_transaction
-    goals.rs                 # list/create/update_saved/delete/contribute_to_goal
-    stats.rs                 # get_dashboard_stats
-    export.rs                # export_csv, export_xlsx
-    import.rs                # import_xlsx
-    patrimonio.rs            # get_patrimonio, list/create/delete_balance_adjustment
-    vision.rs                # analyze_receipt (OCR + LLM + keyword fallback), read_image_base64
-    settings.rs              # get_settings, set_setting
-    check.rs                 # check_dependencies → { tesseract: bool, ollama: bool, version }
-    files.rs                 # attach_file, list_attachments, delete_attachment
+    categories.rs            # CRUD + budget_limit
+    transactions.rs          # CRUD + search_text, currency, attachment_count subquery
+    goals.rs
+    stats.rs                 # get_dashboard_stats, get_budget_alerts
+    export.rs / import.rs
+    patrimonio.rs
+    vision.rs                # OCR + Ollama + keyword fallback + metodo auto
+    settings.rs
+    check.rs
+    files.rs                 # attach/list/delete_attachment + cascade disk delete
+    backup.rs                # export_database (WAL checkpoint), restore_database (integrity_check + swap)
+    recurring.rs             # CRUD + toggle + check_and_insert_recurring
+    telegram.rs              # start/stop/status — usa sidecar/.venv/bin/python3 se disponibile
 ```
 
 ---
 
-## DB Schema (corrente)
+## DB Schema (PRAGMA user_version = 6)
 
 ```sql
-categories         (id, name, color, icon)
-transactions       (id, amount, type, category_id→categories, date, description, notes, source, metodo, created_at)
-goals              (id, name, target, saved, color, icon, created_at)
-balance_adjustments(id, metodo, amount, note, date, created_at)
-settings           (key TEXT PK, value TEXT)
-transaction_files  (id, transaction_id→transactions ON DELETE CASCADE, file_name, file_path, created_at)
+categories          (id, name, color, icon, budget_limit REAL)
+transactions        (id, amount, type, category_id, date, description, notes, source,
+                     metodo TEXT DEFAULT 'carta', currency TEXT DEFAULT 'EUR', created_at)
+goals               (id, name, target, saved, color, icon, created_at)
+balance_adjustments (id, metodo, amount, note, date, created_at)
+settings            (key TEXT PK, value TEXT)
+transaction_files   (id, transaction_id CASCADE, file_name, file_path, created_at)
+recurring_templates (id, description, amount, type, category_id, frequency, next_date, active, created_at)
+bot_notifications   (id, title, body, shown INT DEFAULT 0, created_at)
 ```
 
-**Allegati**: copiati in `{app_data_dir}/attachments/{transaction_id}/{ts}_{filename}`
+Seed: INSERT OR IGNORE categoria "Altro" (#9ca3af, help-circle).
 
 ---
 
-## Comandi Tauri registrati (lib.rs)
+## CSS Tema
 
-Categories: `list_categories`, `create_category`, `update_category`, `delete_category`  
-Transactions: `list_transactions`, `create_transaction`, `update_transaction`, `delete_transaction`  
-Goals: `list_goals`, `create_goal`, `update_goal_saved`, `delete_goal`, `contribute_to_goal`  
-Stats: `get_dashboard_stats`  
-Export/Import: `export_csv`, `export_xlsx`, `import_xlsx`  
-Vision: `analyze_receipt`, `read_image_base64`  
-Patrimonio: `get_patrimonio`, `list_balance_adjustments`, `create_balance_adjustment`, `delete_balance_adjustment`  
-Settings: `get_settings`, `set_setting`  
-Check: `check_dependencies`  
-Files: `attach_file`, `list_attachments`, `delete_attachment`
+Sistema basato su CSS custom properties in `+page.svelte` `:global(:root)` / `[data-theme="light"]`.
+
+Vars principali: `--bg-base`, `--bg-card`, `--bg-card2`, `--bg-elevated`, `--border`, `--border2`, `--text`, `--text-muted`, `--text-dim`, `--accent`, `--accent-lt`, `--income`, `--expense`, `--sidebar-bg`.
+
+Toggle: nav item "Tema chiaro/scuro" in Sidebar → setAttribute + api.setSetting('theme').
+Persistenza: letto da settings in onMount di +page.svelte.
 
 ---
 
-## OCR Pipeline (vision.rs)
+## Telegram Bot
 
-1. `find_tesseract(override)` — cerca path da settings, poi `/opt/homebrew`, `/usr/local`, `/usr/bin`, Windows paths, PATH fallback
-2. Tesseract subprocess: `ita+eng, --psm 6, --dpi 150` → raw_text
-3. Regex Rust: importo (`-9,40€`), data (mesi italiani + ISO + DD/MM/YYYY), merchant (linee UPPERCASE)
-4. Ollama `http://{ollama_url}/api/generate` — modello `qwen2.5-coder:7b` → 1 parola categoria
-5. Se Ollama fallisce → `categorize_by_keywords(raw_text)` → categoria da dizionario IT
-6. `ReceiptData.categoria_source`: `"ollama"` | `"keyword"` | null
+Venv: `sidecar/.venv/bin/python3` — aiogram 3.28, aiosqlite installati.
+Rust: usa venv python se esiste, fallback a `python3` di sistema.
+Token: salvato in settings table (key `telegram_token`) — auto-saved al click "Avvia bot".
+Comandi: `/start`, `/report [mese]`, `/foto` (aiogram FSM: download→OCR→confirm→INSERT).
+Notifiche: bot scrive in `bot_notifications` → thread Rust→ notifica nativa OS ogni 3s.
+
+---
+
+## Auto-update (da completare manualmente)
+
+```bash
+pnpm tauri signer generate -w ~/.tauri/fehu.key
+# copiare la pubkey in src-tauri/tauri.conf.json → plugins.updater.pubkey
+# aggiungere la private key in GitHub Secrets → TAURI_SIGNING_PRIVATE_KEY
+```
 
 ---
 
@@ -116,53 +137,39 @@ Files: `attach_file`, `list_attachments`, `delete_attachment`
 
 | Key | Default | Uso |
 |-----|---------|-----|
-| `ollama_url` | `http://localhost:11434` | URL server Ollama |
-| `tesseract_path` | `""` | Override path Tesseract (vuoto = auto) |
-| `currency_symbol` | `€` | Visualizzazione importi |
-| `onboarded` | `"false"` | Flag primo avvio (onboarding wizard) |
+| `ollama_url` | `http://localhost:11434` | URL Ollama |
+| `tesseract_path` | `""` | Override path Tesseract |
+| `currency_symbol` | `€` | Simbolo valuta UI |
+| `onboarded` | `"false"` | Flag primo avvio |
+| `theme` | `"dark"` | `"dark"` / `"light"` |
+| `telegram_token` | `""` | Token bot Telegram |
 
 ---
 
-## Pagine Sidebar
+## Comandi Tauri (tutti registrati in lib.rs)
 
-**Main nav:** Dashboard, Transazioni, Categorie, Dati, Foto, Obiettivi, P.IVA  
-**Separatore** visivo  
-**Utility nav:** Impostazioni, About
+```
+list/create/update/delete_category
+list/create/update/delete_transaction
+list/create/update_goal_saved/delete/contribute_to_goal
+get_dashboard_stats, get_budget_alerts
+export_csv, export_xlsx, import_xlsx
+analyze_receipt, read_image_base64
+get_patrimonio, list/create/delete_balance_adjustment
+get_settings, set_setting
+check_dependencies
+attach_file, list_attachments, delete_attachment
+export_database, restore_database
+list/create/update/delete/toggle_recurring, check_and_insert_recurring
+start_telegram_bot, stop_telegram_bot, get_telegram_status
+```
 
 ---
 
-## Calcolatore P.IVA (PIva.svelte)
+## Test
 
-Puro frontend, nessun comando Rust. Tre tab:
-- **Forfettario**: fatturato × coeff ATECO → base imponibile → INPS → imposta 5%/15%
-- **Ordinario**: fatturato - spese → IRPEF scaglioni (23/35/43%) + addizionale regionale
-- **Semplificato**: identico a Ordinario, con nota su limiti ricavi
-
-Output: 3 scenari (pessimista −20%, base, ottimista +20%) con breakdown completo.
-
----
-
-## Backlog (prioritizzato)
-
-### 🔴 Alta
-- **DMG + GitHub Release CI** — `.github/workflows/release.yml` (arm64 + intel + windows)
-- **README professionale** — screenshot, requisiti, install, build da sorgente
-- **Logo SVG definitivo** — runa ᚠ come asset, non testo
-- **Balance adjustments list** — dashboard manca lista/delete rettifiche esistenti
-
-### 🟡 Media
-- **Plan C: Telegram bot** — Python aiogram sidecar (non iniziato)
-- **Metodo auto da OCR** — Postepay/Bancomat/POS → carta; contanti → contanti
-- **Transazioni ricorrenti** — spese periodiche con auto-insert
-- **Backup/restore** — export SQLite completo + restore da file
-- **Attachment count in lista** — icona paperclip su righe tx con allegati
-- **Cascade file delete** — quando si elimina tx, cancellare file da disco
-
-### 🟢 Bassa
-- **Categoria "Altro" default** — seed categorie standard al primo avvio
-- **Budget per categoria** — alert soglia mensile
-- **Valuta multipla** — per spese in viaggio
-- **UI polish** — empty states, spaziatura, animazioni
+- Rust: 27 test `#[cfg(test)]` (categories, transactions, budget alerts, recurring advance_date, leap year, check_and_insert)
+- Playwright: configurato (`playwright.config.ts`), test in `e2e/basic.spec.ts`
 
 ---
 
@@ -170,8 +177,9 @@ Output: 3 scenari (pessimista −20%, base, ottimista +20%) con breakdown comple
 
 | Data | Sessione |
 |------|----------|
-| 2026-05-28 | Progetto avviato, Plan A scritto |
-| 2026-05-28 | Plan A implementato — 20 commit, tutte le feature core |
-| 2026-05-29 | Plan B (OCR) implementato: Tesseract + Ollama + regex Rust per importo/data/store |
-| 2026-05-29 | Fix pipeline OCR: keep_alive=0, categoria auto-creata, regex più robuste |
-| 2026-05-29 | **Sessione corrente**: Settings, Onboarding, About, P.IVA, keyword fallback, Windows support, allegati file, separatore sidebar |
+| 2026-05-28 | Progetto avviato, Plan A implementato — core desktop app |
+| 2026-05-29 | Plan B (OCR pipeline), Settings, Onboarding, About, P.IVA, allegati file |
+| 2026-05-29 | Fix OCR: keep_alive=0, categoria auto-creata, regex migliorata |
+| 2026-05-30 | Round 1 backlog: ricorrenti, budget, multi-currency, backup, telegram sidecar, OCR metodo, cascade delete, attachment count |
+| 2026-05-30 | Round 2: search, date filter, shortcuts, fade, tema chiaro/scuro, notifiche native, migration versioning, test suite, auto-update, bot /report+/foto |
+| 2026-05-31 | Fix: bot path (CARGO_MANIFEST_DIR), CSS vars complete (--bg-elevated), layout centrato, token persistence, theme toggle nav item, Python venv aiogram installato |
