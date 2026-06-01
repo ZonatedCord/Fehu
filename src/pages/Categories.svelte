@@ -98,7 +98,7 @@
   h1 { margin: 0; font-size: 1.5rem; }
   .btn-primary { display: inline-flex; align-items: center; gap: 0.3rem; background: var(--accent); color: #fff; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem; }
-  .card { background: var(--bg-card); border-radius: 8px; padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.5rem; }
+  .card { background: var(--bg-card); border-radius: 12px; padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.5rem; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
   .swatch { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
   .cat-icon { display: flex; align-items: center; }
   .name { flex: 1; font-size: 0.9rem; }
