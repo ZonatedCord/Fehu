@@ -469,8 +469,8 @@
   .error { color: var(--expense); }
   .metodo { text-align: center; }
   .badge { display: inline-block; width: 18px; height: 18px; border-radius: 3px; font-size: 0.65rem; font-weight: 700; line-height: 18px; text-align: center; }
-  .badge.cash { background: #166534; color: #4ade80; }
-  .badge.card { background: #1e1b4b; color: #818cf8; }
+  .badge.cash { background: color-mix(in srgb, var(--income) 15%, transparent); color: var(--income); }
+  .badge.card { background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent-lt); }
   .badge.other { background: var(--bg-elevated); color: var(--text-muted); }
 
   /* Calendar */
@@ -533,10 +533,10 @@
   .btn-att:hover { border-color: #6366f1; }
   .att-hint { font-size: 0.78rem; color: var(--text-dim); margin: 0.1rem 0; }
   .att-row { display: flex; align-items: center; justify-content: space-between; background: var(--bg-base); border-radius: 5px; padding: 0.35rem 0.6rem; }
-  .att-name { font-size: 0.82rem; color: #ccc; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .att-name { font-size: 0.82rem; color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .att-actions { display: flex; gap: 0.25rem; flex-shrink: 0; }
   .att-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.78rem; padding: 0.15rem 0.4rem; border-radius: 3px; }
-  .att-btn:hover { color: #ccc; background: var(--bg-card); }
-  .att-btn.danger { color: #f87171; }
+  .att-btn:hover { color: var(--text); background: var(--bg-card); }
+  .att-btn.danger { color: var(--expense); }
   .att-btn.danger:hover { opacity: 0.8; }
 </style>

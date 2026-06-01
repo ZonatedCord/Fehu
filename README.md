@@ -1,23 +1,50 @@
-# Fehu ᚠ
+<div align="center">
 
-**Fehu** is a local-first personal finance desktop app. The name comes from the Elder Futhark rune ᚠ — Old Norse for *wealth* and *cattle*.
+# ᚠ Fehu
 
-No cloud. No subscriptions. Your data stays on your machine.
+**Local-first personal finance for people who don't trust the cloud.**
+
+[![License: MIT](https://img.shields.io/badge/license-MIT-6366f1?style=flat-square)](LICENSE)
+[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey?style=flat-square&logo=apple)](../../releases)
+[![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri%202-24C8D8?style=flat-square&logo=tauri)](https://tauri.app)
+[![Svelte 5](https://img.shields.io/badge/Svelte-5-FF3E00?style=flat-square&logo=svelte&logoColor=white)](https://svelte.dev)
+[![Release](https://img.shields.io/github/v/release/ZonatedCord/Fehu?style=flat-square&color=6366f1)](../../releases/latest)
+
+*Named after the Elder Futhark rune ᚠ — Old Norse for wealth.*
+
+[**Download**](../../releases/latest) · [**Build from source**](#build-from-source) · [**Stack**](#stack)
+
+</div>
+
+---
+
+## What is Fehu?
+
+Fehu is a desktop app for tracking personal finances — income, expenses, savings, receipts, recurring payments. Everything runs locally: **no account, no sync, no subscription, no servers**. Your data is an SQLite file on your disk.
+
+It's designed for people who want full control and don't want to hand their financial history to a SaaS.
 
 ---
 
 ## Features
 
-- **Dashboard** — KPI cards (income / expenses / balance), monthly bar chart, expense donut by category, Sankey flow chart, budget alerts
-- **Transactions** — table and calendar views, CRUD with inline category creation, file attachments, cash/card metodo badges, multi-currency support
-- **Recurring transactions** — templates that auto-insert at the scheduled date (daily / weekly / monthly / yearly)
-- **Categories** — icon + color picker, optional monthly budget limit with alert on Dashboard
-- **Goals / Savings funds** — progress bars, quick-add buttons, versamento creates an expense transaction
-- **OCR receipts** — drag-drop an image → Tesseract 5 extracts amount/date/merchant → qwen2.5-coder:7b categorizes (keyword fallback when Ollama offline), payment method auto-detected from receipt text
-- **P.IVA calculator** — Forfettario / Ordinario / Semplificato regimes, INPS variants, 3 scenarios (−20% / base / +20%)
-- **Multi-currency** — per-transaction currency (EUR, USD, GBP, CHF, JPY)
-- **Backup & Restore** — export / restore the full SQLite database
-- **Import / Export** — import from "Registro Lavoro" XLSX, export CSV and XLSX with date filters
+### Core
+| | |
+|---|---|
+| **Dashboard** | KPI cards, monthly bar chart, expense donut by category, Sankey money-flow chart, budget limit alerts |
+| **Transactions** | Table and calendar views, inline category creation, file attachments, cash / card badges, multi-currency |
+| **Recurring** | Templates that auto-insert at the scheduled date — daily, weekly, monthly, yearly |
+| **Categories** | Icon + color picker, optional monthly budget cap with dashboard alert |
+| **Goals** | Savings funds with progress bars — topping up creates a linked expense transaction |
+
+### Power features
+| | |
+|---|---|
+| **OCR receipts** | Drag-drop an image → Tesseract 5 extracts amount, date, merchant → local LLM categorizes automatically |
+| **P.IVA calculator** | Italian freelance tax scenarios: Forfettario / Ordinario / Semplificato, INPS variants, ±20% projections |
+| **Import / Export** | Import from *Registro Lavoro* XLSX, export filtered CSV and XLSX |
+| **Backup & Restore** | One-click full SQLite database export and restore |
+| **Dark / Light theme** | System-aware, persistent |
 
 ---
 
@@ -26,23 +53,20 @@ No cloud. No subscriptions. Your data stays on your machine.
 | Dependency | Required | Purpose |
 |---|---|---|
 | [Tesseract 5](https://github.com/tesseract-ocr/tesseract) | **Yes** | OCR engine for receipt scanning |
-| [Ollama](https://ollama.com) + `qwen2.5-coder:7b` | No | LLM categorization (keyword fallback used when unavailable) |
+| [Ollama](https://ollama.com) + `qwen2.5-coder:7b` | No | LLM auto-categorization (keyword fallback when offline) |
 
-### macOS
-
+**macOS:**
 ```bash
 brew install tesseract tesseract-lang
 ```
 
-### Windows
-
-Download the Tesseract installer from [UB Mannheim](https://github.com/UB-Mannheim/tesseract/wiki). Default install path `C:\Program Files\Tesseract-OCR\` is auto-detected.
+**Windows:** download the installer from [UB Mannheim](https://github.com/UB-Mannheim/tesseract/wiki). Default path `C:\Program Files\Tesseract-OCR\` is auto-detected.
 
 ---
 
 ## Install
 
-Download the latest release for your platform from [Releases](../../releases):
+Download the latest release from [**Releases**](../../releases/latest):
 
 | Platform | File |
 |---|---|
@@ -50,36 +74,26 @@ Download the latest release for your platform from [Releases](../../releases):
 | macOS Intel | `Fehu_*_x86_64.dmg` |
 | Windows | `Fehu_*_x64-setup.exe` |
 
-**macOS note:** if Gatekeeper blocks the app on first launch, run:
-```bash
-xattr -dr com.apple.quarantine /Applications/Fehu.app
-```
+> **macOS — Gatekeeper:** if the app is blocked on first launch, run:
+> ```bash
+> xattr -dr com.apple.quarantine /Applications/Fehu.app
+> ```
 
 ---
 
 ## Build from source
 
-### Prerequisites
-
-- [Node.js 20+](https://nodejs.org) + [pnpm](https://pnpm.io)
-- [Rust stable](https://rustup.rs)
-- Xcode Command Line Tools (macOS) or Visual Studio Build Tools (Windows)
-
-### Steps
+**Prerequisites:** Node.js 20+, [pnpm](https://pnpm.io), [Rust stable](https://rustup.rs), Xcode CLT (macOS) or VS Build Tools (Windows).
 
 ```bash
-git clone https://github.com/marcobarlera/fehu
-cd fehu
+git clone https://github.com/ZonatedCord/Fehu
+cd Fehu
 pnpm install
-pnpm tauri build
+pnpm tauri build        # → src-tauri/target/release/bundle/
 ```
 
-The `.dmg` / `.msi` is produced in `src-tauri/target/release/bundle/`.
-
-### Dev server
-
 ```bash
-pnpm tauri dev
+pnpm tauri dev          # dev server with hot-reload
 ```
 
 ---
@@ -88,7 +102,7 @@ pnpm tauri dev
 
 | Layer | Technology |
 |---|---|
-| Desktop shell | [Tauri 2](https://tauri.app) |
+| Desktop shell | [Tauri 2](https://tauri.app) (Rust backend) |
 | Frontend | [Svelte 5](https://svelte.dev) + TypeScript + Vite |
 | Database | SQLite via rusqlite (WAL mode) |
 | OCR | Tesseract 5 (local subprocess) |
@@ -104,4 +118,8 @@ MIT — see [LICENSE](LICENSE).
 
 ---
 
-*Built by [Marco Barlera](https://marcobarlera.it)*
+<div align="center">
+
+Built by [Marco Barlera](https://marcobarlera.it)
+
+</div>

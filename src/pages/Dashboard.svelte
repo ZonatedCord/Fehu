@@ -1,10 +1,12 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { get } from 'svelte/store';
   import { Chart, registerables } from 'chart.js';
   import { api } from '../lib/api';
   import type { BalanceAdjustment, BudgetAlert, DashboardStats, PatrimonioStats } from '../lib/types';
   import SankeyChart from '../components/SankeyChart.svelte';
   import { Trash2, BarChart3 } from '@lucide/svelte';
+  import { theme } from '../lib/stores';
 
   Chart.register(...registerables);
 
@@ -52,22 +54,28 @@
     if (monthlyChart) { monthlyChart.destroy(); monthlyChart = null; }
     if (categoryChart) { categoryChart.destroy(); categoryChart = null; }
 
+    const isLight = get(theme) === 'light';
+    const labelColor  = isLight ? '#374151' : '#b0b8cc';
+    const gridColor   = isLight ? '#d1d5eb' : '#2e2e4e';
+    const incomeColor = isLight ? '#16a34a' : '#4ade80';
+    const expenseColor = isLight ? '#dc2626' : '#f87171';
+
     if (monthlyCanvas && stats.monthly.length > 0) {
       monthlyChart = new Chart(monthlyCanvas, {
         type: 'bar',
         data: {
           labels: stats.monthly.map(m => m.month),
           datasets: [
-            { label: 'Entrate', data: stats.monthly.map(m => m.income), backgroundColor: '#4ade8066', borderColor: '#4ade80', borderWidth: 1 },
-            { label: 'Uscite', data: stats.monthly.map(m => m.expense), backgroundColor: '#f8717166', borderColor: '#f87171', borderWidth: 1 },
+            { label: 'Entrate', data: stats.monthly.map(m => m.income), backgroundColor: incomeColor + '55', borderColor: incomeColor, borderWidth: 1 },
+            { label: 'Uscite', data: stats.monthly.map(m => m.expense), backgroundColor: expenseColor + '55', borderColor: expenseColor, borderWidth: 1 },
           ],
         },
         options: {
           responsive: true,
-          plugins: { legend: { labels: { color: '#ccc' } } },
+          plugins: { legend: { labels: { color: labelColor } } },
           scales: {
-            x: { ticks: { color: '#888' }, grid: { color: '#2e2e4e' } },
-            y: { ticks: { color: '#888' }, grid: { color: '#2e2e4e' } },
+            x: { ticks: { color: labelColor }, grid: { color: gridColor } },
+            y: { ticks: { color: labelColor }, grid: { color: gridColor } },
           },
         },
       });
@@ -80,7 +88,7 @@
           labels: stats.by_category.map(c => c.category_name ?? 'Senza categoria'),
           datasets: [{ data: stats.by_category.map(c => c.total), backgroundColor: stats.by_category.map(c => c.color ?? '#6366f1'), borderWidth: 0 }],
         },
-        options: { responsive: true, plugins: { legend: { labels: { color: '#ccc' } } } },
+        options: { responsive: true, plugins: { legend: { labels: { color: labelColor } } } },
       });
     }
   }
@@ -98,7 +106,11 @@
     finally { rettSaving = false; }
   }
 
-  onMount(load);
+  onMount(() => {
+    load();
+    const unsub = theme.subscribe(() => { if (stats) renderCharts(); });
+    return unsub;
+  });
 
   function fmt(n: number) {
     return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(n);
@@ -268,8 +280,8 @@
   .rett-row:hover { background: var(--bg-card); }
   .rett-date { color: var(--text-dim); width: 90px; flex-shrink: 0; }
   .badge-metodo { width: 18px; height: 18px; border-radius: 3px; font-size: 0.65rem; font-weight: 700; line-height: 18px; text-align: center; flex-shrink: 0; }
-  .badge-metodo.cash { background: #166534; color: #4ade80; }
-  .badge-metodo.card { background: #1e1b4b; color: #818cf8; }
+  .badge-metodo.cash { background: color-mix(in srgb, var(--income) 15%, transparent); color: var(--income); }
+  .badge-metodo.card { background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent-lt); }
   .rett-amount { font-weight: 600; width: 90px; flex-shrink: 0; }
   .rett-amount.pos { color: var(--income); }
   .rett-amount.neg { color: var(--expense); }
@@ -292,5 +304,5 @@
   .budget-alert { display: flex; align-items: center; gap: 0.6rem; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.3); border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.85rem; }
   .alert-icon { color: var(--expense); font-weight: 700; font-size: 1rem; }
   .alert-text { color: var(--expense); opacity: 0.85; }
-  .alert-text strong { color: #f87171; }
+  .alert-text strong { color: var(--expense); }
 </style>
