@@ -6,7 +6,7 @@
   import { format } from 'date-fns';
   import { open } from '@tauri-apps/plugin-dialog';
   import { openPath } from '@tauri-apps/plugin-opener';
-  import { Paperclip } from '@lucide/svelte';
+  import { Paperclip, Banknote, CreditCard } from '@lucide/svelte';
   import { keyboardAction } from '../lib/stores';
 
   let transactions = $state<Transaction[]>([]);
@@ -260,9 +260,9 @@
             </td>
             <td>{#if tx.category_name}<span class="tag">{tx.category_name}</span>{:else}<span class="muted">—</span>{/if}</td>
             <td class="metodo">
-              {#if tx.metodo === 'contanti'}<span class="badge cash">C</span>
-              {:else if tx.metodo === 'carta'}<span class="badge card">K</span>
-              {:else}<span class="badge other">?</span>{/if}
+              {#if tx.metodo === 'contanti'}<span class="badge cash" title="Contanti"><Banknote size={11} /></span>
+              {:else if tx.metodo === 'carta'}<span class="badge card" title="Carta"><CreditCard size={11} /></span>
+              {:else}<span class="badge other">—</span>{/if}
             </td>
             <td class="amount" class:income={tx.type === 'income'} class:expense={tx.type === 'expense'}>
               {tx.type === 'income' ? '+' : '-'}{fmt(tx.amount)}
@@ -474,7 +474,7 @@
   .empty { text-align: center; color: var(--text-dim); padding: 2rem; }
   .error { color: var(--expense); }
   .metodo { text-align: center; }
-  .badge { display: inline-block; width: 18px; height: 18px; border-radius: 3px; font-size: 0.65rem; font-weight: 700; line-height: 18px; text-align: center; }
+  .badge { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 4px; }
   .badge.cash { background: color-mix(in srgb, var(--income) 15%, transparent); color: var(--income); }
   .badge.card { background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent-lt); }
   .badge.other { background: var(--bg-elevated); color: var(--text-muted); }

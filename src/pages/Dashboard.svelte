@@ -5,7 +5,7 @@
   import { api } from '../lib/api';
   import type { BalanceAdjustment, BudgetAlert, DashboardStats, PatrimonioStats } from '../lib/types';
   import SankeyChart from '../components/SankeyChart.svelte';
-  import { Trash2, BarChart3 } from '@lucide/svelte';
+  import { Trash2, BarChart3, Banknote, CreditCard } from '@lucide/svelte';
   import { theme } from '../lib/stores';
 
   Chart.register(...registerables);
@@ -156,8 +156,8 @@
           {#each rettifiche as r (r.id)}
             <div class="rett-row">
               <span class="rett-date">{r.date}</span>
-              <span class="badge-metodo" class:cash={r.metodo === 'contanti'} class:card={r.metodo === 'carta'}>
-                {r.metodo === 'contanti' ? 'C' : 'K'}
+              <span class="badge-metodo" class:cash={r.metodo === 'contanti'} class:card={r.metodo === 'carta'} title={r.metodo === 'contanti' ? 'Contanti' : 'Carta'}>
+                {#if r.metodo === 'contanti'}<Banknote size={11} />{:else}<CreditCard size={11} />{/if}
               </span>
               <span class="rett-amount" class:pos={r.amount >= 0} class:neg={r.amount < 0}>
                 {r.amount >= 0 ? '+' : ''}{fmt(r.amount)}
@@ -277,7 +277,7 @@
   .rett-row { display: flex; align-items: center; gap: 0.6rem; padding: 0.35rem 0.5rem; border-radius: 4px; font-size: 0.82rem; }
   .rett-row:hover { background: var(--bg-card); }
   .rett-date { color: var(--text-dim); width: 90px; flex-shrink: 0; }
-  .badge-metodo { width: 18px; height: 18px; border-radius: 3px; font-size: 0.65rem; font-weight: 700; line-height: 18px; text-align: center; flex-shrink: 0; }
+  .badge-metodo { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 4px; flex-shrink: 0; }
   .badge-metodo.cash { background: color-mix(in srgb, var(--income) 15%, transparent); color: var(--income); }
   .badge-metodo.card { background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent-lt); }
   .rett-amount { font-weight: 600; width: 90px; flex-shrink: 0; }
