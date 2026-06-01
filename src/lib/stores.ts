@@ -7,3 +7,4 @@ export const currentPage = writable<Page>('dashboard');
 export const keyboardAction = writable<string | null>(null);
 
 export const theme = writable<'dark' | 'light'>('dark');
+export const updateAvailable = writable(false);

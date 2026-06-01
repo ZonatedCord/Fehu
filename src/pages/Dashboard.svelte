@@ -120,7 +120,6 @@
 <div class="page">
   <div class="page-header">
     <h1>Dashboard</h1>
-    <button class="btn-refresh" onclick={load}>↻ Aggiorna</button>
   </div>
   {#if error}<p class="error">{error}</p>{/if}
   {#if stats}

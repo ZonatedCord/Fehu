@@ -4,7 +4,8 @@ mod error;
 mod models;
 
 use db::Db;
-use tauri::Manager;
+use tauri::{Emitter, Manager};
+use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
 
 pub struct AppState {
     pub db: Db,
@@ -19,6 +20,38 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
+            // Native menu bar
+            let fehu_menu = Submenu::with_items(app, "Fehu", true, &[
+                &PredefinedMenuItem::about(app, Some("Info su Fehu"), None)?,
+                &PredefinedMenuItem::separator(app)?,
+                &MenuItem::with_id(app, "check-update", "Controlla aggiornamenti…", true, None::<&str>)?,
+                &PredefinedMenuItem::separator(app)?,
+                &PredefinedMenuItem::hide(app, Some("Nascondi Fehu"))?,
+                &PredefinedMenuItem::hide_others(app, Some("Nascondi altre"))?,
+                &PredefinedMenuItem::separator(app)?,
+                &PredefinedMenuItem::quit(app, Some("Esci da Fehu"))?,
+            ])?;
+            let file_menu = Submenu::with_items(app, "File", true, &[
+                &MenuItem::with_id(app, "new-transaction", "Nuova transazione", true, Some("CmdOrCtrl+N"))?,
+                &MenuItem::with_id(app, "focus-search", "Cerca", true, Some("CmdOrCtrl+F"))?,
+            ])?;
+            let view_menu = Submenu::with_items(app, "Visualizza", true, &[
+                &MenuItem::with_id(app, "nav-dashboard",    "Dashboard",    true, Some("CmdOrCtrl+1"))?,
+                &MenuItem::with_id(app, "nav-transactions", "Transazioni",  true, Some("CmdOrCtrl+2"))?,
+                &MenuItem::with_id(app, "nav-categories",   "Categorie",    true, Some("CmdOrCtrl+3"))?,
+                &MenuItem::with_id(app, "nav-foto",         "Foto",         true, Some("CmdOrCtrl+4"))?,
+                &MenuItem::with_id(app, "nav-obiettivi",    "Obiettivi",    true, Some("CmdOrCtrl+5"))?,
+                &MenuItem::with_id(app, "nav-ricorrenti",   "Ricorrenti",   true, Some("CmdOrCtrl+6"))?,
+                &MenuItem::with_id(app, "nav-piva",         "P.IVA",        true, Some("CmdOrCtrl+7"))?,
+                &PredefinedMenuItem::separator(app)?,
+                &MenuItem::with_id(app, "nav-settings",     "Impostazioni", true, Some("CmdOrCtrl+Comma"))?,
+            ])?;
+            let menu = Menu::with_items(app, &[&fehu_menu, &file_menu, &view_menu])?;
+            app.set_menu(menu)?;
+            app.on_menu_event(|app, event| {
+                let _ = app.emit("menu-action", event.id().as_ref());
+            });
+
             let db_path = app
                 .path()
                 .app_data_dir()

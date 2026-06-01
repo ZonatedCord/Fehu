@@ -3,7 +3,7 @@
     LayoutDashboard, ArrowUpDown, Tag, Database, Camera, PiggyBank,
     Settings, Info, Calculator, RefreshCw, Sun, Moon,
   } from '@lucide/svelte';
-  import { currentPage, theme } from '../lib/stores';
+  import { currentPage, theme, updateAvailable } from '../lib/stores';
   import { api } from '../lib/api';
   import type { Page } from '../lib/types';
 
@@ -55,7 +55,12 @@
 
   {#each utilityNav as item}
     <button class:active={$currentPage === item.page} onclick={() => currentPage.set(item.page)}>
-      <svelte:component this={item.icon} size={16} />
+      <span class="icon-wrap">
+        <svelte:component this={item.icon} size={16} />
+        {#if item.page === 'settings' && $updateAvailable}
+          <span class="update-dot"></span>
+        {/if}
+      </span>
       {item.label}
     </button>
   {/each}
@@ -118,5 +123,11 @@
     margin: 0.5rem 0.25rem;
     border-top: 1px solid var(--border2);
     flex-shrink: 0;
+  }
+  .icon-wrap { position: relative; display: flex; align-items: center; flex-shrink: 0; }
+  .update-dot {
+    position: absolute; top: -3px; right: -4px;
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #f97316;
   }
 </style>

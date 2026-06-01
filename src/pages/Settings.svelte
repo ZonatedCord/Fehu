@@ -1,7 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { invoke } from '@tauri-apps/api/core';
+  import { getVersion } from '@tauri-apps/api/app';
   import { api } from '../lib/api';
+  import { updateAvailable } from '../lib/stores';
   import type { AppSettings } from '../lib/types';
 
   let settings = $state<AppSettings>({
@@ -20,16 +22,20 @@
   let botBusy = $state(false);
   let updateChecking = $state(false);
   let updateMsg = $state('');
+  let updateReady = $state<any>(null);
+  let currentVersion = $state('');
 
   onMount(async () => {
     try {
-      const [s, running] = await Promise.all([
+      const [s, running, ver] = await Promise.all([
         api.getSettings(),
         api.getTelegramStatus(),
+        getVersion(),
       ]);
       settings = s;
       botRunning = running;
       botToken = (s as any).telegram_token ?? '';
+      currentVersion = ver;
     } catch (e: any) {
       error = e.message ?? String(e);
     }
@@ -54,18 +60,30 @@
   }
 
   async function checkUpdate() {
-    updateChecking = true; updateMsg = '';
+    updateChecking = true; updateMsg = ''; updateReady = null;
     try {
-      // tauri-plugin-updater exposes check via JS plugin
       const { check } = await import('@tauri-apps/plugin-updater');
       const update = await check();
       if (update) {
-        updateMsg = `Aggiornamento disponibile: v${update.version}. Download in corso…`;
-        await update.downloadAndInstall();
-        updateMsg = 'Aggiornamento installato. Riavvia Fehu.';
+        updateReady = update;
+        updateAvailable.set(true);
+        updateMsg = `v${update.version} disponibile`;
       } else {
+        updateAvailable.set(false);
         updateMsg = 'Sei già alla versione più recente.';
       }
+    } catch (e: any) { updateMsg = `Errore: ${e.message ?? String(e)}`; }
+    finally { updateChecking = false; }
+  }
+
+  async function installUpdate() {
+    if (!updateReady) return;
+    updateChecking = true;
+    updateMsg = 'Download in corso…';
+    try {
+      await updateReady.downloadAndInstall();
+      updateMsg = 'Installato. Riavvia Fehu.';
+      updateAvailable.set(false);
     } catch (e: any) { updateMsg = `Errore: ${e.message ?? String(e)}`; }
     finally { updateChecking = false; }
   }
@@ -136,10 +154,25 @@
 
     <section>
       <h2>Aggiornamenti</h2>
-      <button class="btn-ghost" onclick={checkUpdate} disabled={updateChecking}>
-        {updateChecking ? 'Controllo…' : 'Controlla aggiornamenti'}
-      </button>
-      {#if updateMsg}<p class="update-msg">{updateMsg}</p>{/if}
+      <div class="update-row">
+        <div class="update-info">
+          <span class="update-version">Versione corrente: <strong>v{currentVersion || '…'}</strong></span>
+          {#if $updateAvailable && updateReady}
+            <span class="update-badge">v{updateReady.version} disponibile</span>
+          {/if}
+        </div>
+        <div class="update-actions">
+          <button class="btn-ghost" onclick={checkUpdate} disabled={updateChecking}>
+            {updateChecking ? 'Controllo…' : 'Controlla'}
+          </button>
+          {#if updateReady}
+            <button class="btn-primary" onclick={installUpdate} disabled={updateChecking}>
+              Installa v{updateReady.version}
+            </button>
+          {/if}
+        </div>
+      </div>
+      {#if updateMsg}<p class="update-msg" class:ok={!updateReady && updateMsg.includes('recente')}>{updateMsg}</p>{/if}
     </section>
 
     <section>
@@ -223,5 +256,11 @@
   .bot-status { font-size: 0.78rem; color: var(--text-dim); }
   .bot-status.on { color: var(--income); }
   .bot-msg { color: var(--income); font-size: 0.82rem; margin: 0; }
-  .update-msg { color: var(--text-muted); font-size: 0.82rem; margin: 0.5rem 0 0; }
+  .update-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  .update-info { display: flex; flex-direction: column; gap: 0.3rem; }
+  .update-version { font-size: 0.85rem; color: var(--text-muted); }
+  .update-badge { font-size: 0.75rem; font-weight: 600; color: #f97316; background: color-mix(in srgb, #f97316 12%, transparent); border: 1px solid color-mix(in srgb, #f97316 35%, transparent); padding: 0.15rem 0.5rem; border-radius: 6px; width: fit-content; }
+  .update-actions { display: flex; gap: 0.5rem; align-items: center; flex-shrink: 0; }
+  .update-msg { font-size: 0.82rem; margin: 0.5rem 0 0; color: var(--text-muted); }
+  .update-msg.ok { color: var(--income); }
 </style>
