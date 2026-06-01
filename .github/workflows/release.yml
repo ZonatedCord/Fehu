@@ -14,12 +14,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-14        # Apple Silicon (arm64)
-            arch: aarch64
-          - os: macos-13        # Intel (x86_64)
-            arch: x86_64
+          - os: macos-14
+            args: '--target aarch64-apple-darwin'
+            label: aarch64
+          - os: macos-14
+            args: '--target x86_64-apple-darwin'
+            label: x86_64
           - os: windows-latest
-            arch: x86_64
+            args: ''
+            label: windows
 
     runs-on: ${{ matrix.os }}
 
@@ -40,6 +43,8 @@ jobs:
 
       - name: Setup Rust stable
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
@@ -77,3 +82,4 @@ jobs:
             ```
           releaseDraft: true
           prerelease: false
+          args: ${{ matrix.args }}
