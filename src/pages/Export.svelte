@@ -152,28 +152,28 @@
 </div>
 
 <style>
-  .page { max-width: 480px; }
+  .page { max-width: 520px; }
   h1 { margin: 0 0 1.5rem; font-size: 1.5rem; }
-  h2 { font-size: 1rem; color: #aaa; margin: 0 0 0.5rem; font-weight: 500; }
-  section { margin-bottom: 1.5rem; }
-  hr { border: none; border-top: 1px solid #2e2e4e; margin: 1.5rem 0; }
-  .hint { color: var(--text-dim); font-size: 0.8rem; margin-bottom: 0.75rem; line-height: 1.5; }
+  h2 { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin: 0 0 0.5rem; }
+  section { background: var(--bg-card); border-radius: 16px; padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); margin-bottom: 1rem; }
+  hr { display: none; }
+  .hint { color: var(--text-muted); font-size: 0.82rem; margin: 0; line-height: 1.5; }
   form { display: flex; flex-direction: column; gap: 0.75rem; }
-  label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.85rem; color: #aaa; }
-  input[type="date"] { padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-base); color: var(--text); font-size: 0.9rem; }
+  label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.85rem; color: var(--text-muted); }
+  input[type="date"] { padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-base); color: var(--text); font-size: 0.9rem; }
   .btn-primary, .btn-secondary {
     display: inline-flex; align-items: center; gap: 0.4rem;
-    border: none; padding: 0.55rem 1.1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem;
+    border: none; padding: 0.55rem 1.1rem; border-radius: 10px; cursor: pointer; font-size: 0.9rem;
   }
-  .btn-primary { background: #6366f1; color: #fff; align-self: flex-start; margin-top: 0.25rem; }
-  .btn-secondary { background: var(--bg-card); border: 1px solid var(--border); color: #ccc; }
+  .btn-primary { background: var(--accent); color: #fff; align-self: flex-start; }
+  .btn-secondary { background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-muted); }
   .btn-primary:disabled, .btn-secondary:disabled { opacity: 0.6; cursor: not-allowed; }
-  .btn-excel { display: inline-flex; align-items: center; gap: 0.4rem; background: #16a34a; color: #fff; border: none; padding: 0.55rem 1.1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
+  .btn-excel { display: inline-flex; align-items: center; gap: 0.4rem; background: var(--income); color: #fff; border: none; padding: 0.55rem 1.1rem; border-radius: 10px; cursor: pointer; font-size: 0.9rem; align-self: flex-start; }
   .btn-excel:disabled { opacity: 0.6; cursor: not-allowed; }
   .backup-row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
-  .btn-backup { display: inline-flex; align-items: center; gap: 0.4rem; background: var(--bg-card); border: 1px solid var(--border); color: #ccc; padding: 0.55rem 1.1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
-  .btn-restore { display: inline-flex; align-items: center; gap: 0.4rem; background: #1a1a1a; border: 1px solid #7f1d1d; color: #f87171; padding: 0.55rem 1.1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
+  .btn-backup { display: inline-flex; align-items: center; gap: 0.4rem; background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-muted); padding: 0.55rem 1.1rem; border-radius: 10px; cursor: pointer; font-size: 0.9rem; }
+  .btn-restore { display: inline-flex; align-items: center; gap: 0.4rem; background: color-mix(in srgb, var(--expense) 10%, transparent); border: 1px solid color-mix(in srgb, var(--expense) 40%, transparent); color: var(--expense); padding: 0.55rem 1.1rem; border-radius: 10px; cursor: pointer; font-size: 0.9rem; }
   .btn-backup:disabled, .btn-restore:disabled { opacity: 0.6; cursor: not-allowed; }
-  .success { color: #4ade80; margin-top: 0.75rem; }
-  .error { color: #f87171; margin-top: 0.75rem; }
+  .success { color: var(--income); margin: 0; font-size: 0.85rem; }
+  .error { color: var(--expense); margin: 0; font-size: 0.85rem; }
 </style>

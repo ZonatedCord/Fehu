@@ -38,6 +38,13 @@
   </div>
 
   <div class="sections">
+    <section class="why-section">
+      <h2>Perché esiste</h2>
+      <p class="why-text">Cercavo un'app per le finanze personali che fosse <strong>gratuita</strong>, <strong>locale</strong> (niente cloud, niente account) e abbastanza completa da gestire categorie, ricorrenti, P.IVA e foto ricevute.</p>
+      <p class="why-text">Non ho trovato nulla che soddisfacesse tutti e tre i requisiti. I software gratuiti erano troppo basilari. Quelli potenti erano a pagamento o basati su cloud.</p>
+      <p class="why-text why-conclusion">Così l'ho costruito io.</p>
+    </section>
+
     <section>
       <h2>Autore</h2>
       <div class="links">
@@ -99,6 +106,10 @@
 
   .sections { display: flex; flex-direction: column; gap: 1.5rem; }
   section { background: var(--bg-card); border-radius: 16px; padding: 1.25rem 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .why-section { border-left: 3px solid var(--accent); }
+  .why-text { margin: 0 0 0.6rem; font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; }
+  .why-text:last-child { margin-bottom: 0; }
+  .why-conclusion { color: var(--text); font-weight: 600; font-style: italic; }
   h2 {
     margin: 0 0 1rem; font-size: 0.78rem; font-weight: 600;
     text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim);

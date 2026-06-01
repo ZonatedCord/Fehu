@@ -448,9 +448,9 @@
   .btn-reset { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 0.9rem; padding: 0.2rem 0.4rem; }
   .btn-reset:hover { color: var(--expense); }
   select { padding: 0.4rem 0.75rem; background: var(--bg-card); border: 1px solid var(--border); color: var(--text); border-radius: 6px; font-size: 0.85rem; }
-  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-  th { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); color: var(--text-muted); font-weight: 500; font-size: 0.8rem; }
-  td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border2); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; background: var(--bg-card); border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  th { text-align: left; padding: 0.6rem 0.75rem; border-bottom: 2px solid var(--bg-elevated); color: var(--text-dim); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; background: var(--bg-card2); }
+  td { padding: 0.65rem 0.75rem; border-bottom: 1px solid var(--border2); }
   .date { color: var(--text-muted); font-size: 0.8rem; white-space: nowrap; }
   .amount { font-weight: 600; text-align: right; }
   .income { color: var(--income); }
