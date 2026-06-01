@@ -41,9 +41,9 @@
     <section>
       <h2>Autore</h2>
       <div class="links">
-        <button class="link-btn" onclick={() => navigate('https://marcobarlera.it')}>
+        <button class="link-btn" onclick={() => navigate('https://marcobarlera.com')}>
           <Globe size={15} />
-          marcobarlera.it
+          marcobarlera.com
         </button>
         <button class="link-btn" onclick={() => navigate('https://github.com/marcobarlera')}>
           <ExternalLink size={15} />
@@ -82,15 +82,15 @@
   .hero {
     display: flex; align-items: center; gap: 1.25rem;
     margin-bottom: 2.5rem; padding-bottom: 2rem;
-    border-bottom: 1px solid #1e1e2e;
+    border-bottom: 1px solid var(--border);
   }
   .rune {
     font-size: 3.5rem; line-height: 1;
-    color: #a5b4fc; flex-shrink: 0;
+    color: var(--accent-lt); flex-shrink: 0;
   }
   h1 { margin: 0 0 0.25rem; font-size: 2rem; letter-spacing: 0.04em; }
   .tagline { margin: 0 0 0.3rem; color: var(--text-dim); font-size: 0.9rem; }
-  .etymology { margin: 0 0 0.5rem; color: #444; font-size: 0.78rem; line-height: 1.5; }
+  .etymology { margin: 0 0 0.5rem; color: var(--text-muted); font-size: 0.78rem; line-height: 1.5; }
   .version {
     display: inline-block; background: var(--bg-card);
     color: var(--text-dim); font-size: 0.78rem; padding: 0.15rem 0.5rem;
@@ -98,7 +98,7 @@
   }
 
   .sections { display: flex; flex-direction: column; gap: 1.5rem; }
-  section { background: var(--bg-card); border-radius: 10px; padding: 1.25rem; }
+  section { background: var(--bg-card); border-radius: 16px; padding: 1.25rem 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
   h2 {
     margin: 0 0 1rem; font-size: 0.78rem; font-weight: 600;
     text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim);
@@ -108,11 +108,11 @@
   .link-btn {
     display: flex; align-items: center; gap: 0.4rem;
     background: var(--bg-base); border: 1px solid var(--border);
-    color: #a5b4fc; padding: 0.5rem 0.9rem;
-    border-radius: 6px; cursor: pointer; font-size: 0.875rem;
+    color: var(--accent-lt); padding: 0.5rem 0.9rem;
+    border-radius: 10px; cursor: pointer; font-size: 0.875rem;
     transition: border-color 0.15s;
   }
-  .link-btn:hover { border-color: #6366f1; }
+  .link-btn:hover { border-color: var(--accent); }
 
   .stack-list {
     list-style: none; margin: 0; padding: 0;
@@ -130,10 +130,10 @@
     display: flex; flex-direction: column; gap: 0.6rem;
   }
   .principles li {
-    font-size: 0.875rem; color: #aaa; padding-left: 1rem;
+    font-size: 0.875rem; color: var(--text-muted); padding-left: 1rem;
     position: relative;
   }
   .principles li::before {
-    content: '—'; position: absolute; left: 0; color: #3e3e5e;
+    content: '—'; position: absolute; left: 0; color: var(--text-dim);
   }
 </style>
