@@ -90,24 +90,28 @@
     --accent-lt:   #a5b4fc;
     --income:      #4ade80;
     --expense:     #f87171;
-    --sidebar-bg:  #0c0c18;
+    --sidebar-bg:    #0c0c18;
+    --sidebar-hover: rgba(255,255,255,0.07);
+    --sidebar-logo:  #a5b4fc;
   }
   :global([data-theme="light"]) {
-    --bg-base:     #f0f2f8;
+    --bg-base:     #e8eaf4;
     --bg-card:     #ffffff;
-    --bg-card2:    #f8f9fc;
-    --bg-elevated: #eaecf5;
-    --bg-input:    #f1f3f9;
-    --border:      #d1d5db;
-    --border2:     #e5e7eb;
-    --text:        #111827;
-    --text-muted:  #6b7280;
-    --text-dim:    #9ca3af;
-    --accent:      #6366f1;
-    --accent-lt:   #818cf8;
-    --income:      #16a34a;
-    --expense:     #dc2626;
-    --sidebar-bg:  #1e1e2e;
+    --bg-card2:    #f4f5fb;
+    --bg-elevated: #dde0f0;
+    --bg-input:    #f0f2fa;
+    --border:      #b8bdd6;
+    --border2:     #d0d4e8;
+    --text:        #0f172a;
+    --text-muted:  #374151;
+    --text-dim:    #6b7280;
+    --accent:      #4f46e5;
+    --accent-lt:   #6366f1;
+    --income:      #15803d;
+    --expense:     #b91c1c;
+    --sidebar-bg:   #d4d8ef;
+    --sidebar-hover: rgba(0,0,0,0.07);
+    --sidebar-logo:  #4f46e5;
   }
   :global(*, *::before, *::after) { box-sizing: border-box; }
   :global(body) {
@@ -115,8 +119,15 @@
     background: var(--bg-base); color: var(--text);
     transition: background 0.2s, color 0.2s;
   }
+  /* Global modern defaults */
+  :global(input), :global(select), :global(textarea) {
+    border-radius: 10px !important;
+  }
+  :global(.btn-primary), :global(.btn-ghost), :global(.btn-ghost-small) {
+    border-radius: 10px !important;
+  }
   /* Center all page components within the content area */
   :global(.page) { margin: 0 auto; }
-  .layout { display: flex; min-height: 100vh; }
-  .content { flex: 1; padding: 2rem 2.5rem; overflow-y: auto; }
+  .layout { display: flex; min-height: 100vh; padding: 0.75rem; gap: 0.75rem; background: var(--bg-base); }
+  .content { flex: 1; padding: 2rem 2.5rem; overflow-y: auto; background: var(--bg-card); border-radius: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
 </style>

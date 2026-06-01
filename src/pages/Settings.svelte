@@ -186,7 +186,7 @@
   .subtitle { color: var(--text-dim); font-size: 0.875rem; margin: 0; }
 
   .sections { display: flex; flex-direction: column; gap: 1.75rem; }
-  section { background: var(--bg-card); border-radius: 10px; padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; }
+  section { background: var(--bg-card); border-radius: 16px; padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
   h2 { margin: 0 0 0.25rem; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); }
 
   label { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.9rem; color: var(--text); }
@@ -214,14 +214,14 @@
     font-size: 0.82rem; white-space: nowrap;
   }
   .btn-ghost:hover { color: #aaa; border-color: #3e3e5e; }
-  .error { color: #f87171; font-size: 0.85rem; margin: 0; white-space: pre-wrap; user-select: text; }
-  code { background: var(--bg-base); padding: 0.1rem 0.35rem; border-radius: 3px; font-size: 0.8rem; }
+  .error { color: var(--expense); font-size: 0.85rem; margin: 0; white-space: pre-wrap; user-select: text; }
+  code { background: var(--bg-elevated); padding: 0.1rem 0.35rem; border-radius: 4px; font-size: 0.8rem; }
   .bot-row { display: flex; align-items: center; gap: 0.75rem; }
-  .btn-bot { background: #1a2e1a; border: 1px solid #166534; color: #4ade80; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
-  .btn-bot.running { background: #2e1a1a; border-color: #7f1d1d; color: #f87171; }
+  .btn-bot { background: color-mix(in srgb, var(--income) 12%, transparent); border: 1px solid color-mix(in srgb, var(--income) 40%, transparent); color: var(--income); padding: 0.5rem 1rem; border-radius: 10px; cursor: pointer; font-size: 0.9rem; }
+  .btn-bot.running { background: color-mix(in srgb, var(--expense) 12%, transparent); border-color: color-mix(in srgb, var(--expense) 40%, transparent); color: var(--expense); }
   .btn-bot:disabled { opacity: 0.6; cursor: not-allowed; }
   .bot-status { font-size: 0.78rem; color: var(--text-dim); }
-  .bot-status.on { color: #4ade80; }
-  .bot-msg { color: #4ade80; font-size: 0.82rem; margin: 0; }
+  .bot-status.on { color: var(--income); }
+  .bot-msg { color: var(--income); font-size: 0.82rem; margin: 0; }
   .update-msg { color: var(--text-muted); font-size: 0.82rem; margin: 0.5rem 0 0; }
 </style>

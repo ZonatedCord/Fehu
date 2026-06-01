@@ -252,14 +252,14 @@
   h1 { margin: 0; font-size: 1.5rem; }
   .btn-refresh { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted); padding: 0.35rem 0.75rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
   .kpi-row { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
-  .kpi { flex: 1; min-width: 160px; background: var(--bg-card); border-radius: 8px; padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.25rem; }
+  .kpi { flex: 1; min-width: 160px; background: var(--bg-card); border-radius: 14px; padding: 1.1rem 1.25rem; display: flex; flex-direction: column; gap: 0.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
   .kpi-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
   .kpi-value { font-size: 1.5rem; font-weight: 700; }
   .income .kpi-value { color: var(--income); }
   .expense .kpi-value { color: var(--expense); }
   .balance .kpi-value { color: var(--accent-lt); }
   .charts-row { display: flex; gap: 1rem; flex-wrap: wrap; }
-  .chart-card { background: var(--bg-card); border-radius: 8px; padding: 1.25rem; flex: 1; min-width: 280px; }
+  .chart-card { background: var(--bg-card); border-radius: 14px; padding: 1.25rem; flex: 1; min-width: 280px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
   .chart-card.wide { flex: 2; }
   .chart-card.full { flex: 1 0 100%; }
   h2 { margin: 0 0 1rem; font-size: 0.95rem; color: var(--text-muted); font-weight: 500; }
@@ -289,7 +289,7 @@
   .btn-del-rett { background: none; border: none; color: var(--text-dim); cursor: pointer; padding: 0.1rem 0.25rem; border-radius: 3px; display: flex; align-items: center; }
   .btn-del-rett:hover { color: var(--expense); }
   .backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 100; }
-  .modal { background: var(--bg-card); border-radius: 10px; padding: 1.5rem; width: 360px; max-width: 95vw; }
+  .modal { background: var(--bg-card); border-radius: 18px; padding: 1.5rem; width: 360px; max-width: 95vw; }
   .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
   .modal-header h2 { margin: 0; font-size: 1.1rem; color: var(--text); }
   .btn-close { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem; }

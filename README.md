@@ -18,11 +18,19 @@
 
 ---
 
+## Why Fehu exists
+
+I wanted a personal finance app that was:
+
+- **free** — no subscription, no freemium limits
+- **local** — no cloud account, no sync, no servers
+- **complete** — categories, recurring payments, receipts with OCR, P.IVA calculator, Telegram bot
+
+I couldn't find anything that hit all three. Free apps were too basic. Powerful apps were paywalled or cloud-only. So I built it myself.
+
 ## What is Fehu?
 
 Fehu is a desktop app for tracking personal finances — income, expenses, savings, receipts, recurring payments. Everything runs locally: **no account, no sync, no subscription, no servers**. Your data is an SQLite file on your disk.
-
-It's designed for people who want full control and don't want to hand their financial history to a SaaS.
 
 ---
 

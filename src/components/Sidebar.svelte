@@ -75,41 +75,47 @@
 
 <style>
   .sidebar {
-    width: 180px; min-height: 100vh;
+    width: 190px;
     background: var(--sidebar-bg); color: var(--text);
     display: flex; flex-direction: column;
-    padding: 1rem 0.75rem; gap: 0.25rem;
+    padding: 1rem 0.875rem; gap: 0.2rem;
+    border-radius: 14px;
+    flex-shrink: 0;
   }
   .theme-toggle {
     display: flex; align-items: center; gap: 0.5rem;
-    padding: 0.55rem 0.75rem; border: none;
+    padding: 0.6rem 0.875rem; border: none;
     background: transparent; color: var(--text-dim);
-    cursor: pointer; border-radius: 6px;
+    cursor: pointer; border-radius: 12px;
     font-size: 0.82rem; text-align: left;
     transition: background 0.15s, color 0.15s;
     width: 100%;
   }
-  .theme-toggle:hover { background: rgba(255,255,255,0.07); color: var(--text-muted); }
+  .theme-toggle:hover { background: var(--sidebar-hover); color: var(--text-muted); }
   .logo {
     display: flex; align-items: center; gap: 0.5rem;
     padding: 0.5rem 0.5rem 1.25rem;
-    color: #a5b4fc;
+    color: var(--sidebar-logo);
   }
   .logo span {
     font-size: 1.15rem; font-weight: 700; letter-spacing: 0.06em;
   }
   button {
-    display: flex; align-items: center; gap: 0.5rem;
-    padding: 0.55rem 0.75rem; border: none;
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.6rem 0.875rem; border: none;
     background: transparent; color: var(--text-muted);
-    cursor: pointer; border-radius: 6px;
-    font-size: 0.9rem; text-align: left;
+    cursor: pointer; border-radius: 12px;
+    font-size: 0.875rem; text-align: left;
     transition: background 0.15s, color 0.15s;
   }
-  button:hover { background: rgba(255,255,255,0.07); color: var(--text); }
-  button.active { background: rgba(99,102,241,0.18); color: var(--accent-lt); }
+  button:hover { background: var(--sidebar-hover); color: var(--text); }
+  button.active {
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    color: var(--accent);
+    font-weight: 600;
+  }
   .separator {
-    margin: 0.5rem 0.5rem;
+    margin: 0.5rem 0.25rem;
     border-top: 1px solid var(--border2);
     flex-shrink: 0;
   }
