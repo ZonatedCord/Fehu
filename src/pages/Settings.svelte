@@ -161,16 +161,13 @@
 
       {#if ollamaGuide}
         <div class="guide-box">
-          <p class="guide-step"><span class="step-num">1</span> Scarica e installa Ollama da <strong>ollama.com</strong></p>
-          <p class="guide-step"><span class="step-num">2</span> Scarica il modello (terminale):</p>
-          <div class="code-row">
-            <code>ollama pull qwen2.5-coder:7b</code>
-            <button class="btn-copy" onclick={() => copy('ollama pull qwen2.5-coder:7b', 'ollama-pull')}>
-              {copied === 'ollama-pull' ? '✓' : 'Copia'}
+          <p class="guide-intro">Copia questo prompt e incollalo nel tuo assistente AI preferito (Claude, ChatGPT, ecc.) — ti guiderà passo passo.</p>
+          <div class="ai-prompt-box">
+            <p class="ai-prompt-text">Devo installare e configurare Ollama sul mio computer per farlo funzionare con un'app desktop chiamata Fehu. Fehu è un tracker finanziario locale che usa Ollama per categorizzare automaticamente le spese tramite il modello qwen2.5-coder:7b. Guidami passo passo per: 1) installare Ollama sul mio sistema operativo, 2) scaricare il modello qwen2.5-coder:7b, 3) verificare che tutto funzioni. Dimmi prima qual è il mio sistema operativo per darti le istruzioni giuste.</p>
+            <button class="btn-copy-ai" onclick={() => copy('Devo installare e configurare Ollama sul mio computer per farlo funzionare con un\'app desktop chiamata Fehu. Fehu è un tracker finanziario locale che usa Ollama per categorizzare automaticamente le spese tramite il modello qwen2.5-coder:7b. Guidami passo passo per: 1) installare Ollama sul mio sistema operativo, 2) scaricare il modello qwen2.5-coder:7b, 3) verificare che tutto funzioni. Dimmi prima qual è il mio sistema operativo per darti le istruzioni giuste.', 'ollama-ai')}>
+              {copied === 'ollama-ai' ? '✓ Copiato' : 'Copia prompt'}
             </button>
           </div>
-          <p class="guide-step"><span class="step-num">3</span> Ollama parte in automatico. L'URL default è già corretto.</p>
-          <p class="guide-note">Senza Ollama, Fehu usa categorizzazione automatica per parole chiave.</p>
         </div>
       {/if}
 
@@ -226,24 +223,13 @@
 
       {#if telegramGuide}
         <div class="guide-box">
-          <p class="guide-step"><span class="step-num">1</span> Apri Telegram e cerca <strong>@BotFather</strong></p>
-          <p class="guide-step"><span class="step-num">2</span> Invia questo prompt a BotFather (copia e incolla):</p>
-          <div class="code-row">
-            <code>/newbot</code>
-            <button class="btn-copy" onclick={() => copy('/newbot', 'newbot')}>
-              {copied === 'newbot' ? '✓' : 'Copia'}
+          <p class="guide-intro">Copia questo prompt e incollalo nel tuo assistente AI preferito — ti guiderà passo passo.</p>
+          <div class="ai-prompt-box">
+            <p class="ai-prompt-text">Devo configurare un bot Telegram per un'app desktop chiamata Fehu (tracker finanziario locale). Il bot mi permette di aggiungere spese e ricevute direttamente da Telegram. Ho bisogno che tu mi guidi per: 1) creare il bot su Telegram tramite @BotFather e ottenere il token, 2) verificare che Python 3 sia installato sul mio computer, 3) installare le dipendenze necessarie (aiogram e aiosqlite). Una volta che ho il token, lo incollo nell'app e avvio il bot. Guidami passo passo partendo dall'inizio.</p>
+            <button class="btn-copy-ai" onclick={() => copy('Devo configurare un bot Telegram per un\'app desktop chiamata Fehu (tracker finanziario locale). Il bot mi permette di aggiungere spese e ricevute direttamente da Telegram. Ho bisogno che tu mi guidi per: 1) creare il bot su Telegram tramite @BotFather e ottenere il token, 2) verificare che Python 3 sia installato sul mio computer, 3) installare le dipendenze necessarie (aiogram e aiosqlite). Una volta che ho il token, lo incollo nell\'app e avvio il bot. Guidami passo passo partendo dall\'inizio.', 'telegram-ai')}>
+              {copied === 'telegram-ai' ? '✓ Copiato' : 'Copia prompt'}
             </button>
           </div>
-          <p class="guide-step"><span class="step-num">3</span> Scegli un nome per il bot (es. <em>Fehu Finance</em>) e uno username che finisce in <code>bot</code></p>
-          <p class="guide-step"><span class="step-num">4</span> BotFather ti manda il token — incollalo qui sotto</p>
-          <p class="guide-step"><span class="step-num">5</span> Assicurati di avere Python 3 installato:</p>
-          <div class="code-row">
-            <code>pip3 install aiogram aiosqlite</code>
-            <button class="btn-copy" onclick={() => copy('pip3 install aiogram aiosqlite', 'pip')}>
-              {copied === 'pip' ? '✓' : 'Copia'}
-            </button>
-          </div>
-          <p class="guide-note">Il bot gira in locale sul tuo Mac — nessun server esterno.</p>
         </div>
       {/if}
 
@@ -342,10 +328,11 @@
   .guide-step { margin: 0; font-size: 0.84rem; color: var(--text-muted); display: flex; align-items: baseline; gap: 0.5rem; }
   .step-num { background: var(--accent); color: #fff; font-size: 0.7rem; font-weight: 700; width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .guide-note { margin: 0; font-size: 0.78rem; color: var(--text-dim); font-style: italic; }
-  .code-row { display: flex; align-items: center; gap: 0.5rem; background: var(--bg-elevated); border-radius: 7px; padding: 0.4rem 0.75rem; }
-  .code-row code { background: none; padding: 0; flex: 1; font-size: 0.82rem; color: var(--text); }
-  .btn-copy { background: none; border: 1px solid var(--border); border-radius: 5px; color: var(--text-dim); font-size: 0.72rem; padding: 0.15rem 0.5rem; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
-  .btn-copy:hover { color: var(--text); }
   .ping-msg { font-size: 0.8rem; margin: 0.25rem 0 0; color: var(--text-muted); }
   .ping-msg.ok { color: var(--income); }
+  .guide-intro { margin: 0; font-size: 0.82rem; color: var(--text-muted); }
+  .ai-prompt-box { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 10px; padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
+  .ai-prompt-text { margin: 0; font-size: 0.82rem; color: var(--text-muted); line-height: 1.55; font-style: italic; }
+  .btn-copy-ai { align-self: flex-end; background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 0.4rem 0.9rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+  .btn-copy-ai:hover { opacity: 0.88; }
 </style>
