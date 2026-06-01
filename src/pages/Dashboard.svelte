@@ -249,7 +249,6 @@
   .page { max-width: 1000px; }
   .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
   h1 { margin: 0; font-size: 1.5rem; }
-  .btn-refresh { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted); padding: 0.35rem 0.75rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
   .kpi-row { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
   .kpi { flex: 1; min-width: 160px; background: var(--bg-card); border-radius: 14px; padding: 1.1rem 1.25rem; display: flex; flex-direction: column; gap: 0.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
   .kpi-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
