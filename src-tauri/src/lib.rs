@@ -34,6 +34,17 @@ pub fn run() {
             let file_menu = Submenu::with_items(app, "File", true, &[
                 &MenuItem::with_id(app, "new-transaction", "Nuova transazione", true, Some("CmdOrCtrl+N"))?,
                 &MenuItem::with_id(app, "focus-search", "Cerca", true, Some("CmdOrCtrl+F"))?,
+                &PredefinedMenuItem::separator(app)?,
+                &MenuItem::with_id(app, "nav-export", "Esporta / Backup", true, Some("CmdOrCtrl+E"))?,
+            ])?;
+            let edit_menu = Submenu::with_items(app, "Modifica", true, &[
+                &PredefinedMenuItem::undo(app, Some("Annulla"))?,
+                &PredefinedMenuItem::redo(app, Some("Ripristina"))?,
+                &PredefinedMenuItem::separator(app)?,
+                &PredefinedMenuItem::cut(app, Some("Taglia"))?,
+                &PredefinedMenuItem::copy(app, Some("Copia"))?,
+                &PredefinedMenuItem::paste(app, Some("Incolla"))?,
+                &PredefinedMenuItem::select_all(app, Some("Seleziona tutto"))?,
             ])?;
             let view_menu = Submenu::with_items(app, "Visualizza", true, &[
                 &MenuItem::with_id(app, "nav-dashboard",    "Dashboard",    true, Some("CmdOrCtrl+1"))?,
@@ -46,7 +57,7 @@ pub fn run() {
                 &PredefinedMenuItem::separator(app)?,
                 &MenuItem::with_id(app, "nav-settings",     "Impostazioni", true, Some("CmdOrCtrl+Comma"))?,
             ])?;
-            let menu = Menu::with_items(app, &[&fehu_menu, &file_menu, &view_menu])?;
+            let menu = Menu::with_items(app, &[&fehu_menu, &file_menu, &edit_menu, &view_menu])?;
             app.set_menu(menu)?;
             app.on_menu_event(|app, event| {
                 let _ = app.emit("menu-action", event.id().as_ref());

@@ -36,7 +36,7 @@ src/
   lib/
     types.ts                 # Page, Transaction, Category, Goal, BudgetAlert, RecurringTemplate, ...
     api.ts                   # Wrapper invoke() per tutti i comandi Tauri
-    stores.ts                # currentPage, keyboardAction, theme writable stores
+    stores.ts                # currentPage, keyboardAction, theme, updateAvailable writable stores
   components/
     Sidebar.svelte           # mainNav (8) + utilityNav (2) + "Tema chiaro/scuro" toggle nav item
     Onboarding.svelte        # Wizard primo avvio
@@ -62,7 +62,7 @@ sidecar/
   .venv/                    # virtualenv con aiogram 3.28 + aiosqlite (gitignored)
 
 src-tauri/src/
-  lib.rs                     # setup + background thread notifiche (poll bot_notifications ogni 3s)
+  lib.rs                     # setup + native menu bar (Fehu/File/Modifica/Visualizza) + background thread notifiche
   models.rs
   error.rs
   db/mod.rs                  # MIGRATIONS[6] + PRAGMA user_version
@@ -123,13 +123,14 @@ Notifiche: bot scrive in `bot_notifications` → thread Rust→ notifica nativa 
 
 ---
 
-## Auto-update (da completare manualmente)
+## Auto-update ✅ configurato
 
-```bash
-pnpm tauri signer generate -w ~/.tauri/fehu.key
-# copiare la pubkey in src-tauri/tauri.conf.json → plugins.updater.pubkey
-# aggiungere la private key in GitHub Secrets → TAURI_SIGNING_PRIVATE_KEY
-```
+- Keypair generato: `~/.tauri/fehu.key` (privata) / `~/.tauri/fehu.key.pub` (pubblica)
+- `tauri.conf.json` → `plugins.updater.pubkey` settato, endpoint → `ZonatedCord/Fehu`, `dialog: false`
+- GitHub Secrets → `TAURI_SIGNING_PRIVATE_KEY` + `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` settati
+- CI `.github/workflows/release.yml` — permissions: `contents: write`
+- Startup check: 3s delay → se update → `pendingUpdate` state → modale toast in alto a destra
+- Badge arancione su icona Impostazioni sidebar se update disponibile
 
 ---
 
@@ -183,3 +184,5 @@ start_telegram_bot, stop_telegram_bot, get_telegram_status
 | 2026-05-30 | Round 1 backlog: ricorrenti, budget, multi-currency, backup, telegram sidecar, OCR metodo, cascade delete, attachment count |
 | 2026-05-30 | Round 2: search, date filter, shortcuts, fade, tema chiaro/scuro, notifiche native, migration versioning, test suite, auto-update, bot /report+/foto |
 | 2026-05-31 | Fix: bot path (CARGO_MANIFEST_DIR), CSS vars complete (--bg-elevated), layout centrato, token persistence, theme toggle nav item, Python venv aiogram installato |
+| 2026-06-01 | Release v0.1.0 su GitHub (ZonatedCord/Fehu). CI 3 piattaforme (aarch64 ✅ Windows ✅ Intel ✅). Icona runa Fehu indigo. |
+| 2026-06-02 | UI overhaul light theme: floating card layout, sidebar chiara, contrasti migliorati. Auto-update UX (startup popup, badge sidebar, settings section). Native macOS menu bar (Fehu/File/Modifica/Visualizza) con Cmd+1-7, E, N, F, e copy-paste nativi. Guide AI-assisted per Ollama e Telegram in Settings. Badge metodo → icone Lucide Banknote/CreditCard. Leggenda badge transazioni. QA checklist in docs/. README italiano "Perché esiste". |

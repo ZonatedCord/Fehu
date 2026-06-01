@@ -42,7 +42,7 @@
       <h2>Perché esiste</h2>
       <p class="why-text">Cercavo un'app per le finanze personali che fosse <strong>gratuita</strong>, <strong>locale</strong> (niente cloud, niente account) e abbastanza completa da gestire categorie, ricorrenti, P.IVA e foto ricevute.</p>
       <p class="why-text">Non ho trovato nulla che soddisfacesse tutti e tre i requisiti. I software gratuiti erano troppo basilari. Quelli potenti erano a pagamento o basati su cloud.</p>
-      <p class="why-text why-conclusion">Così l'ho costruito io.</p>
+      <p class="why-text why-conclusion">Nessuno l'aveva costruito nel modo giusto. Allora l'ho costruito io.</p>
     </section>
 
     <section>

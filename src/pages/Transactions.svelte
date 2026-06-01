@@ -247,6 +247,10 @@
       {/if}
     </div>
     {#if error}<p class="error">{error}</p>{/if}
+    <div class="legend">
+      <span class="legend-item"><span class="badge cash"><Banknote size={11} /></span> Contanti</span>
+      <span class="legend-item"><span class="badge card"><CreditCard size={11} /></span> Carta</span>
+    </div>
     <div class="table-wrap">
     <table>
       <thead><tr><th>Data</th><th>Descrizione</th><th>Categoria</th><th>Metodo</th><th>Importo</th><th></th></tr></thead>
@@ -461,6 +465,8 @@
   .amount { font-weight: 600; text-align: right; }
   .income { color: var(--income); }
   .expense { color: var(--expense); }
+  .legend { display: flex; gap: 1rem; margin-bottom: 0.5rem; }
+  .legend-item { display: flex; align-items: center; gap: 0.3rem; font-size: 0.75rem; color: var(--text-muted); }
   .tag { background: var(--bg-elevated); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem; }
   .muted { color: var(--text-dim); }
   .desc-cell { display: flex; align-items: center; gap: 0.35rem; }

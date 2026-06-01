@@ -18,15 +18,13 @@
 
 ---
 
-## Why Fehu exists
+## Perché esiste
 
-I wanted a personal finance app that was:
+Cercavo un'app per le finanze personali che fosse **gratuita**, **locale** (niente cloud, niente account) e abbastanza completa da gestire categorie, ricorrenti, P.IVA e foto ricevute.
 
-- **free** — no subscription, no freemium limits
-- **local** — no cloud account, no sync, no servers
-- **complete** — categories, recurring payments, receipts with OCR, P.IVA calculator, Telegram bot
+Non ho trovato nulla che soddisfacesse tutti e tre i requisiti. I software gratuiti erano troppo basilari. Quelli potenti erano a pagamento o basati su cloud.
 
-I couldn't find anything that hit all three. Free apps were too basic. Powerful apps were paywalled or cloud-only. So I built it myself.
+Nessuno l'aveva costruito nel modo giusto. Allora l'ho costruito io.
 
 ## What is Fehu?
 
