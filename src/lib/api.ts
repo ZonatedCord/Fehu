@@ -44,6 +44,7 @@ export const api = {
   setSetting: (key: string, value: string) => invoke<void>('set_setting', { key, value }),
 
   checkDependencies: () => invoke<DepsStatus>('check_dependencies'),
+  installDependency: (dep: string) => invoke<{ success: boolean; output: string }>('install_dependency', { dep }),
 
   attachFile: (transactionId: number, sourcePath: string) =>
     invoke<TransactionFile>('attach_file', { transaction_id: transactionId, source_path: sourcePath }),

@@ -130,6 +130,7 @@ pub fn run() {
             commands::settings::get_settings,
             commands::settings::set_setting,
             commands::check::check_dependencies,
+            commands::check::install_dependency,
             commands::files::attach_file,
             commands::files::list_attachments,
             commands::files::delete_attachment,

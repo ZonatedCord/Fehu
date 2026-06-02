@@ -28,6 +28,9 @@
   let telegramGuide = $state(false);
   let ollamaPing = $state('');
   let copied = $state('');
+  let depsStatus = $state<{ tesseract: boolean; ollama: boolean; tesseract_version: string | null } | null>(null);
+  let installing = $state<Record<string, boolean>>({});
+  let installMsg = $state<Record<string, string>>({});
 
   onMount(async () => {
     try {
@@ -40,6 +43,7 @@
       botRunning = running;
       botToken = (s as any).telegram_token ?? '';
       currentVersion = ver;
+      depsStatus = await api.checkDependencies();
     } catch (e: any) {
       error = e.message ?? String(e);
     }
@@ -127,6 +131,20 @@
   function copy(text: string, key: string) {
     navigator.clipboard.writeText(text).then(() => { copied = key; setTimeout(() => copied = '', 1500); });
   }
+
+  async function installDep(dep: string) {
+    installing = { ...installing, [dep]: true };
+    installMsg = { ...installMsg, [dep]: 'Installazione in corso…' };
+    try {
+      const r = await api.installDependency(dep);
+      installMsg = { ...installMsg, [dep]: r.success ? '✓ Installato correttamente.' : r.output };
+      if (r.success) depsStatus = await api.checkDependencies();
+    } catch (e: any) {
+      installMsg = { ...installMsg, [dep]: `Errore: ${e.message ?? String(e)}` };
+    } finally {
+      installing = { ...installing, [dep]: false };
+    }
+  }
 </script>
 
 <div class="page">
@@ -137,15 +155,35 @@
 
   <div class="sections">
     <section>
-      <h2>OCR</h2>
+      <div class="section-header">
+        <h2>OCR — Tesseract</h2>
+        {#if depsStatus}
+          <span class="dep-status" class:ok={depsStatus.tesseract} class:missing={!depsStatus.tesseract}>
+            {depsStatus.tesseract ? `✓ ${depsStatus.tesseract_version ?? 'installato'}` : '✗ non trovato'}
+          </span>
+        {/if}
+      </div>
+
+      {#if depsStatus && !depsStatus.tesseract}
+        <div class="dep-missing-box">
+          <p class="dep-hint">Tesseract è necessario per scansionare le foto ricevute.</p>
+          <div class="dep-actions">
+            <button class="btn-install" onclick={() => installDep('tesseract')} disabled={installing['tesseract']}>
+              {installing['tesseract'] ? 'Installazione…' : '↓ Installa automaticamente (macOS)'}
+            </button>
+            <button class="btn-copy-ai" onclick={() => copy('Ho bisogno di installare Tesseract 5 sul mio computer per farlo funzionare con un\'app desktop chiamata Fehu (tracker finanziario). Tesseract serve per l\'OCR delle foto delle ricevute. Guidami passo passo per installarlo sul mio sistema operativo, incluso come verificare che funzioni correttamente. Dimmi prima il tuo sistema operativo così ti do le istruzioni giuste.', 'tess-ai')}>
+              {copied === 'tess-ai' ? '✓ Copiato' : 'Copia prompt AI'}
+            </button>
+          </div>
+          {#if installMsg['tesseract']}<p class="install-msg" class:ok={installMsg['tesseract'].startsWith('✓')}>{installMsg['tesseract']}</p>{/if}
+        </div>
+      {/if}
+
       <label>
         <span>Percorso Tesseract</span>
-        <p class="field-hint">Lascia vuoto per rilevamento automatico. Usa un percorso assoluto se Tesseract non viene trovato.</p>
+        <p class="field-hint">Lascia vuoto per rilevamento automatico.</p>
         <div class="input-row">
-          <input
-            bind:value={settings.tesseract_path}
-            placeholder="Auto-rilevamento (lascia vuoto)"
-          />
+          <input bind:value={settings.tesseract_path} placeholder="Auto-rilevamento (lascia vuoto)" />
           <button class="btn-ghost" onclick={autoDetectTesseract} type="button">Reimposta</button>
         </div>
       </label>
@@ -220,6 +258,13 @@
           {telegramGuide ? 'Chiudi guida' : 'Come configurare'}
         </button>
       </div>
+
+      <div class="dep-actions" style="margin-bottom: 0.25rem;">
+        <button class="btn-install" onclick={() => installDep('pip-bot')} disabled={installing['pip-bot']}>
+          {installing['pip-bot'] ? 'Installazione…' : '↓ Installa dipendenze Python (aiogram + aiosqlite)'}
+        </button>
+      </div>
+      {#if installMsg['pip-bot']}<p class="install-msg" class:ok={installMsg['pip-bot'].startsWith('✓')} style="margin-bottom:0.5rem;">{installMsg['pip-bot']}</p>{/if}
 
       {#if telegramGuide}
         <div class="guide-box">
@@ -330,6 +375,16 @@
   .guide-note { margin: 0; font-size: 0.78rem; color: var(--text-dim); font-style: italic; }
   .ping-msg { font-size: 0.8rem; margin: 0.25rem 0 0; color: var(--text-muted); }
   .ping-msg.ok { color: var(--income); }
+  .dep-status { font-size: 0.78rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 6px; }
+  .dep-status.ok { color: var(--income); background: color-mix(in srgb, var(--income) 10%, transparent); }
+  .dep-status.missing { color: var(--expense); background: color-mix(in srgb, var(--expense) 10%, transparent); }
+  .dep-missing-box { background: color-mix(in srgb, var(--expense) 6%, transparent); border: 1px solid color-mix(in srgb, var(--expense) 20%, transparent); border-radius: 10px; padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.6rem; }
+  .dep-hint { margin: 0; font-size: 0.82rem; color: var(--text-muted); }
+  .dep-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+  .btn-install { background: var(--accent); color: #fff; border: none; border-radius: 10px; padding: 0.45rem 0.9rem; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+  .btn-install:disabled { opacity: 0.6; cursor: not-allowed; }
+  .install-msg { margin: 0; font-size: 0.8rem; color: var(--expense); }
+  .install-msg.ok { color: var(--income); }
   .guide-intro { margin: 0; font-size: 0.82rem; color: var(--text-muted); }
   .ai-prompt-box { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 10px; padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
   .ai-prompt-text { margin: 0; font-size: 0.82rem; color: var(--text-muted); line-height: 1.55; font-style: italic; }

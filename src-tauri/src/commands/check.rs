@@ -2,6 +2,12 @@ use crate::error::AppError;
 use serde::Serialize;
 
 #[derive(Serialize)]
+pub struct InstallResult {
+    pub success: bool,
+    pub output: String,
+}
+
+#[derive(Serialize)]
 pub struct DepsStatus {
     pub tesseract: bool,
     pub ollama: bool,
@@ -69,4 +75,28 @@ pub async fn check_dependencies() -> Result<DepsStatus, AppError> {
         .unwrap_or(false);
 
     Ok(DepsStatus { tesseract, ollama, tesseract_version })
+}
+
+#[tauri::command]
+pub async fn install_dependency(dep: String) -> Result<InstallResult, AppError> {
+    let (cmd, args): (&str, Vec<&str>) = match dep.as_str() {
+        "tesseract" => {
+            #[cfg(target_os = "macos")]
+            { ("brew", vec!["install", "tesseract", "tesseract-lang"]) }
+            #[cfg(not(target_os = "macos"))]
+            { return Ok(InstallResult { success: false, output: "Installa Tesseract manualmente da https://github.com/UB-Mannheim/tesseract/wiki".into() }); }
+        }
+        "pip-bot" => ("pip3", vec!["install", "aiogram", "aiosqlite"]),
+        _ => return Ok(InstallResult { success: false, output: format!("Dipendenza sconosciuta: {dep}") }),
+    };
+
+    match std::process::Command::new(cmd).args(&args).output() {
+        Ok(out) => {
+            let stdout = String::from_utf8_lossy(&out.stdout).to_string();
+            let stderr = String::from_utf8_lossy(&out.stderr).to_string();
+            let combined = format!("{stdout}{stderr}").trim().to_string();
+            Ok(InstallResult { success: out.status.success(), output: if combined.is_empty() { "Completato.".into() } else { combined } })
+        }
+        Err(e) => Ok(InstallResult { success: false, output: format!("Errore: {e}") }),
+    }
 }
