@@ -27,6 +27,7 @@
   let ollamaGuide = $state(false);
   let telegramGuide = $state(false);
   let ollamaPing = $state('');
+  let ollamaModels = $state<string[]>([]);
   let copied = $state('');
   let depsStatus = $state<{ tesseract: boolean; ollama: boolean; tesseract_version: string | null } | null>(null);
   let installing = $state<Record<string, boolean>>({});
@@ -120,11 +121,17 @@
   }
 
   async function pingOllama() {
-    ollamaPing = 'Connessione…';
+    ollamaPing = 'Connessione…'; ollamaModels = [];
     try {
       const res = await fetch(settings.ollama_url.replace(/\/$/, '') + '/api/tags', { signal: AbortSignal.timeout(4000) });
-      if (res.ok) { const j = await res.json(); ollamaPing = `OK — ${j.models?.length ?? 0} modelli installati`; }
-      else ollamaPing = `Errore HTTP ${res.status}`;
+      if (res.ok) {
+        const j = await res.json();
+        ollamaModels = (j.models ?? []).map((m: any) => m.name as string);
+        ollamaPing = `OK — ${ollamaModels.length} modell${ollamaModels.length === 1 ? 'o' : 'i'} installat${ollamaModels.length === 1 ? 'o' : 'i'}`;
+        if (ollamaModels.length > 0 && !(settings as any).ollama_model) {
+          await api.setSetting('ollama_model', ollamaModels[0]);
+        }
+      } else ollamaPing = `Errore HTTP ${res.status}`;
     } catch { ollamaPing = 'Nessuna risposta. Ollama non è in esecuzione?'; }
   }
 
@@ -216,6 +223,19 @@
           <button class="btn-ghost" onclick={pingOllama} type="button">Testa</button>
         </div>
         {#if ollamaPing}<p class="ping-msg" class:ok={ollamaPing.startsWith('OK')}>{ollamaPing}</p>{/if}
+        {#if ollamaModels.length > 0}
+          <label style="margin-top:0.25rem;">
+            <span>Modello per OCR</span>
+            <select
+              value={(settings as any).ollama_model ?? 'qwen2.5-coder:7b'}
+              onchange={(e) => api.setSetting('ollama_model', (e.target as HTMLSelectElement).value)}
+            >
+              {#each ollamaModels as m}
+                <option value={m}>{m}</option>
+              {/each}
+            </select>
+          </label>
+        {/if}
       </label>
     </section>
 

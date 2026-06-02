@@ -16,6 +16,7 @@
   import About from '../pages/About.svelte';
   import PIva from '../pages/PIva.svelte';
   import Ricorrenti from '../pages/Ricorrenti.svelte';
+  import Guida from '../pages/Guida.svelte';
 
   let showOnboarding = $state(false);
   let pendingUpdate = $state<any>(null);
@@ -66,7 +67,7 @@
         'nav-dashboard': 'dashboard', 'nav-transactions': 'transactions',
         'nav-categories': 'categories', 'nav-foto': 'foto',
         'nav-obiettivi': 'obiettivi', 'nav-ricorrenti': 'ricorrenti',
-        'nav-piva': 'piva', 'nav-settings': 'settings', 'nav-export': 'export',
+        'nav-piva': 'piva', 'nav-settings': 'settings', 'nav-export': 'export', 'nav-guida': 'guida',
       };
       if (navMap[id]) currentPage.set(navMap[id] as any);
       if (id === 'new-transaction') {
@@ -131,6 +132,7 @@
         {:else if $currentPage === 'about'}<About />
         {:else if $currentPage === 'piva'}<PIva />
         {:else if $currentPage === 'ricorrenti'}<Ricorrenti />
+        {:else if $currentPage === 'guida'}<Guida />
         {/if}
       </div>
     {/key}

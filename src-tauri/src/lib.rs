@@ -57,7 +57,10 @@ pub fn run() {
                 &PredefinedMenuItem::separator(app)?,
                 &MenuItem::with_id(app, "nav-settings",     "Impostazioni", true, Some("CmdOrCtrl+Comma"))?,
             ])?;
-            let menu = Menu::with_items(app, &[&fehu_menu, &file_menu, &edit_menu, &view_menu])?;
+            let help_menu = Submenu::with_items(app, "Aiuto", true, &[
+                &MenuItem::with_id(app, "nav-guida", "Guida Fehu", true, Some("CmdOrCtrl+Shift+H"))?,
+            ])?;
+            let menu = Menu::with_items(app, &[&fehu_menu, &file_menu, &edit_menu, &view_menu, &help_menu])?;
             app.set_menu(menu)?;
             app.on_menu_event(|app, event| {
                 let _ = app.emit("menu-action", event.id().as_ref());

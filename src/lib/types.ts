@@ -107,7 +107,7 @@ export interface RecurringInput {
   next_date: string;
 }
 
-export type Page = 'dashboard' | 'transactions' | 'categories' | 'export' | 'foto' | 'obiettivi' | 'settings' | 'about' | 'piva' | 'ricorrenti';
+export type Page = 'dashboard' | 'transactions' | 'categories' | 'export' | 'foto' | 'obiettivi' | 'settings' | 'about' | 'piva' | 'ricorrenti' | 'guida';
 
 export interface AppSettings {
   ollama_url: string;

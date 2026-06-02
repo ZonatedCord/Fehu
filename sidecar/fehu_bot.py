@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Fehu Telegram Bot — Plan C
+Fehu Telegram Bot
 Requires: pip install aiogram aiosqlite
 Usage: python3 fehu_bot.py --token BOT_TOKEN --db-path /path/to/fehu.db
 """
@@ -14,7 +14,6 @@ import subprocess
 import sys
 import tempfile
 import logging
-from calendar import month_name
 from datetime import date
 
 try:
@@ -24,7 +23,7 @@ try:
     from aiogram.fsm.context import FSMContext
     from aiogram.fsm.state import State, StatesGroup
     from aiogram.fsm.storage.memory import MemoryStorage
-    from aiogram.types import Message
+    from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 except ImportError as e:
     print(f"Dipendenze mancanti: {e}\nInstalla con: pip install aiogram aiosqlite", file=sys.stderr)
     sys.exit(1)
@@ -41,16 +40,19 @@ MESI_IT = {
 }
 
 
-# ─── FSM States ──────────────────────────────────────────────────────────────
-
 class FotoStates(StatesGroup):
     waiting_confirm = State()
 
 
-# ─── Helpers ─────────────────────────────────────────────────────────────────
-
 def fmt_eur(amount: float) -> str:
     return f"{amount:,.2f} €".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def confirm_keyboard(amount: float, description: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text="✅ Salva", callback_data="foto_ok"),
+        InlineKeyboardButton(text="❌ Annulla", callback_data="foto_no"),
+    ]])
 
 
 async def get_patrimonio() -> dict:
@@ -77,44 +79,71 @@ async def get_patrimonio() -> dict:
             "totale": contanti + adj_c + carta + adj_k}
 
 
-async def get_last_transactions(n: int = 5) -> list[dict]:
+async def get_last_transactions(n: int = 5, category: str | None = None) -> list[dict]:
     async with aiosqlite.connect(DB_PATH) as db:
-        async with db.execute("""
-            SELECT t.date, t.description, t.amount, t.type, c.name
-            FROM transactions t LEFT JOIN categories c ON c.id = t.category_id
-            ORDER BY t.date DESC, t.id DESC LIMIT ?
-        """, (n,)) as cur:
-            rows = await cur.fetchall()
+        if category:
+            async with db.execute("""
+                SELECT t.date, t.description, t.amount, t.type, c.name
+                FROM transactions t LEFT JOIN categories c ON c.id = t.category_id
+                WHERE LOWER(c.name) LIKE LOWER(?)
+                ORDER BY t.date DESC, t.id DESC LIMIT ?
+            """, (f"%{category}%", n)) as cur:
+                rows = await cur.fetchall()
+        else:
+            async with db.execute("""
+                SELECT t.date, t.description, t.amount, t.type, c.name
+                FROM transactions t LEFT JOIN categories c ON c.id = t.category_id
+                ORDER BY t.date DESC, t.id DESC LIMIT ?
+            """, (n,)) as cur:
+                rows = await cur.fetchall()
     return [{"date": r[0], "desc": r[1], "amount": r[2], "type": r[3], "cat": r[4]} for r in rows]
 
 
-async def get_monthly_report(month: str) -> list[dict]:
-    """month: YYYY-MM"""
+async def get_monthly_report(month: str) -> dict:
     async with aiosqlite.connect(DB_PATH) as db:
         async with db.execute("""
             SELECT c.name, SUM(t.amount) AS spent, c.budget_limit
             FROM transactions t
             LEFT JOIN categories c ON c.id = t.category_id
             WHERE t.type = 'expense' AND strftime('%Y-%m', t.date) = ?
-            GROUP BY t.category_id
-            ORDER BY spent DESC
+            GROUP BY t.category_id ORDER BY spent DESC
         """, (month,)) as cur:
             rows = await cur.fetchall()
-        async with db.execute("""
-            SELECT COALESCE(SUM(amount), 0) FROM transactions
-            WHERE type='income' AND strftime('%Y-%m', date) = ?
-        """, (month,)) as cur:
+        async with db.execute(
+            "SELECT COALESCE(SUM(amount),0) FROM transactions WHERE type='income' AND strftime('%Y-%m',date)=?", (month,)
+        ) as cur:
             total_in = (await cur.fetchone())[0]
-        async with db.execute("""
-            SELECT COALESCE(SUM(amount), 0) FROM transactions
-            WHERE type='expense' AND strftime('%Y-%m', date) = ?
-        """, (month,)) as cur:
+        async with db.execute(
+            "SELECT COALESCE(SUM(amount),0) FROM transactions WHERE type='expense' AND strftime('%Y-%m',date)=?", (month,)
+        ) as cur:
             total_out = (await cur.fetchone())[0]
     return {"rows": [{"cat": r[0] or "—", "spent": r[1], "budget": r[2]} for r in rows],
             "income": total_in, "expense": total_out}
 
 
-async def add_transaction(amount: float, description: str, tx_date: str | None = None) -> None:
+async def get_goals() -> list[dict]:
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute("SELECT name, target, saved, color FROM goals ORDER BY id") as cur:
+            rows = await cur.fetchall()
+    return [{"name": r[0], "target": r[1], "saved": r[2]} for r in rows]
+
+
+async def get_categories_with_totals() -> list[dict]:
+    month = f"{date.today().year}-{date.today().month:02d}"
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute("""
+            SELECT c.name, c.budget_limit,
+                   COALESCE(SUM(CASE WHEN t.type='expense' AND strftime('%Y-%m',t.date)=? THEN t.amount ELSE 0 END),0)
+            FROM categories c
+            LEFT JOIN transactions t ON t.category_id = c.id
+            GROUP BY c.id ORDER BY c.name
+        """, (month,)) as cur:
+            rows = await cur.fetchall()
+    return [{"name": r[0], "budget": r[1], "spent": r[2]} for r in rows]
+
+
+async def add_transaction(amount: float, description: str, tx_type: str = "expense",
+                          metodo: str = "carta", tx_date: str | None = None) -> None:
     today = tx_date or date.today().isoformat()
     async with aiosqlite.connect(DB_PATH) as db:
         async with db.execute("SELECT id FROM categories WHERE name='Altro' LIMIT 1") as cur:
@@ -122,13 +151,13 @@ async def add_transaction(amount: float, description: str, tx_date: str | None =
             cat_id = row[0] if row else None
         await db.execute(
             "INSERT INTO transactions (amount,type,category_id,date,description,notes,source,metodo,currency)"
-            " VALUES (?, 'expense', ?, ?, ?, '', 'telegram', 'carta', 'EUR')",
-            (amount, cat_id, today, description),
+            " VALUES (?, ?, ?, ?, ?, '', 'telegram', ?, 'EUR')",
+            (amount, tx_type, cat_id, today, description, metodo),
         )
-        # Notify Fehu desktop app
+        label = "entrata" if tx_type == "income" else "spesa"
         await db.execute(
             "INSERT INTO bot_notifications (title, body) VALUES (?, ?)",
-            ("Nuova spesa via Telegram", f"{fmt_eur(amount)} — {description}"),
+            (f"Nuova {label} via Telegram", f"{fmt_eur(amount)} — {description}"),
         )
         await db.commit()
 
@@ -140,11 +169,8 @@ async def find_tesseract() -> str | None:
             override = row[0] if row else ""
     if override and os.path.exists(override):
         return override
-    candidates = [
-        "/opt/homebrew/bin/tesseract", "/usr/local/bin/tesseract", "/usr/bin/tesseract",
-        r"C:\Program Files\Tesseract-OCR\tesseract.exe",
-    ]
-    for p in candidates:
+    for p in ["/opt/homebrew/bin/tesseract", "/usr/local/bin/tesseract", "/usr/bin/tesseract",
+              r"C:\Program Files\Tesseract-OCR\tesseract.exe"]:
         if os.path.exists(p):
             return p
     return shutil.which("tesseract")
@@ -173,14 +199,17 @@ def parse_merchant(text: str) -> str:
 
 async def cmd_start(message: Message):
     await message.answer(
-        "👋 *Fehu Bot*\n\n"
-        "Comandi:\n"
+        "*Fehu Bot*\n\n"
+        "Comandi disponibili:\n"
         "• `/saldo` — patrimonio attuale\n"
         "• `/spese [N]` — ultime N transazioni\n"
+        "• `/spese @categoria` — filtra per categoria\n"
         "• `/aggiungi <importo> <descrizione>` — aggiungi spesa\n"
-        "• `/report [mese]` — report mensile (es. `/report maggio`)\n"
-        "• Manda una *foto* — OCR scontrino → conferma → salva\n"
-        "• `/aiuta` — questo messaggio",
+        "• `/aggiungi +<importo> <descrizione>` — aggiungi entrata\n"
+        "• `/report [mese]` — report mensile\n"
+        "• `/obiettivi` — fondi risparmio\n"
+        "• `/categorie` — categorie con spese del mese\n"
+        "• Manda una *foto* — OCR scontrino automatico",
         parse_mode="Markdown",
     )
 
@@ -189,11 +218,11 @@ async def cmd_saldo(message: Message):
     try:
         p = await get_patrimonio()
         await message.answer(
-            "💰 *Saldo attuale*\n\n"
+            "*Saldo attuale*\n\n"
             f"Contanti: `{fmt_eur(p['contanti'])}`\n"
             f"Carta:    `{fmt_eur(p['carta'])}`\n"
             f"──────────────\n"
-            f"*Totale:  `{fmt_eur(p['totale'])}`*",
+            f"*Totale: `{fmt_eur(p['totale'])}`*",
             parse_mode="Markdown",
         )
     except Exception as e:
@@ -202,18 +231,22 @@ async def cmd_saldo(message: Message):
 
 async def cmd_spese(message: Message):
     parts = (message.text or "").split()
-    n = 5
-    if len(parts) >= 2:
-        try:
-            n = max(1, min(20, int(parts[1])))
-        except ValueError:
-            pass
+    n, cat_filter = 5, None
+    for part in parts[1:]:
+        if part.startswith("@"):
+            cat_filter = part[1:]
+        else:
+            try:
+                n = max(1, min(20, int(part)))
+            except ValueError:
+                pass
     try:
-        txs = await get_last_transactions(n)
+        txs = await get_last_transactions(n, cat_filter)
         if not txs:
-            await message.answer("Nessuna transazione.")
+            await message.answer("Nessuna transazione trovata.")
             return
-        lines = [f"📋 *Ultime {n} transazioni*\n"]
+        header = f"*Ultime {n} transazioni*" + (f" in _{cat_filter}_" if cat_filter else "")
+        lines = [header + "\n"]
         for t in txs:
             sign = "+" if t["type"] == "income" else "-"
             cat = f" [{t['cat']}]" if t["cat"] else ""
@@ -227,33 +260,24 @@ async def cmd_report(message: Message):
     parts = (message.text or "").split(maxsplit=1)
     today = date.today()
     month = f"{today.year}-{today.month:02d}"
-
     if len(parts) >= 2:
         arg = parts[1].strip().lower()
-        # Try "maggio" / "may" → YYYY-MM current year
         found = MESI_IT.get(arg)
         if found:
             month = f"{today.year}-{found}"
-        # Try "YYYY-MM"
         elif re.match(r"\d{4}-\d{2}", arg):
             month = arg
-
     try:
         data = await get_monthly_report(month)
-        rows = data["rows"]
-        income, expense = data["income"], data["expense"]
-
-        label = month
-        lines = [f"📊 *Report {label}*\n",
+        rows, income, expense = data["rows"], data["income"], data["expense"]
+        lines = [f"*Report {month}*\n",
                  f"Entrate: `{fmt_eur(income)}`  Uscite: `{fmt_eur(expense)}`\n"]
         for r in rows:
             budget_str = f" / {fmt_eur(r['budget'])}" if r["budget"] else ""
             over = " ⚠️" if r["budget"] and r["spent"] > r["budget"] else ""
             lines.append(f"• {r['cat']}: `{fmt_eur(r['spent'])}{budget_str}`{over}")
-
         if not rows:
             lines.append("Nessuna spesa questo mese.")
-
         await message.answer("\n".join(lines), parse_mode="Markdown")
     except Exception as e:
         await message.answer(f"Errore: {e}")
@@ -263,42 +287,77 @@ async def cmd_aggiungi(message: Message):
     parts = (message.text or "").split(maxsplit=2)
     if len(parts) < 3:
         await message.answer(
-            "Uso: `/aggiungi <importo> <descrizione>`\nEs: `/aggiungi 12.50 Caffè al bar`",
+            "Uso:\n`/aggiungi 12.50 Caffè` — spesa\n`/aggiungi +50 Stipendio` — entrata",
             parse_mode="Markdown",
         )
         return
+    raw_amount = parts[1]
+    tx_type = "income" if raw_amount.startswith("+") else "expense"
     try:
-        amount = float(parts[1].replace(",", "."))
+        amount = float(raw_amount.lstrip("+").replace(",", "."))
         if amount <= 0:
-            raise ValueError("deve essere positivo")
+            raise ValueError
         description = parts[2]
-    except ValueError as e:
-        await message.answer(f"Importo non valido: {e}")
+    except ValueError:
+        await message.answer("Importo non valido.")
         return
     try:
-        await add_transaction(amount, description)
-        await message.answer(f"✅ *{fmt_eur(amount)}* — {description}", parse_mode="Markdown")
+        await add_transaction(amount, description, tx_type)
+        icon = "💰" if tx_type == "income" else "✅"
+        label = "Entrata" if tx_type == "income" else "Spesa"
+        await message.answer(f"{icon} *{label}*: `{fmt_eur(amount)}` — {description}", parse_mode="Markdown")
     except Exception as e:
         await message.answer(f"Errore salvataggio: {e}")
 
 
-async def cmd_aiuta(message: Message):
-    await cmd_start(message)
+async def cmd_obiettivi(message: Message):
+    try:
+        goals = await get_goals()
+        if not goals:
+            await message.answer("Nessun fondo risparmio.")
+            return
+        lines = ["*Fondi risparmio*\n"]
+        for g in goals:
+            pct = min(100, round(g["saved"] / g["target"] * 100)) if g["target"] > 0 else 0
+            bar_filled = round(pct / 10)
+            bar = "█" * bar_filled + "░" * (10 - bar_filled)
+            lines.append(f"*{g['name']}*\n`{bar}` {pct}%\n{fmt_eur(g['saved'])} / {fmt_eur(g['target'])}\n")
+        await message.answer("\n".join(lines), parse_mode="Markdown")
+    except Exception as e:
+        await message.answer(f"Errore: {e}")
+
+
+async def cmd_categorie(message: Message):
+    try:
+        cats = await get_categories_with_totals()
+        if not cats:
+            await message.answer("Nessuna categoria.")
+            return
+        month = f"{date.today().year}-{date.today().month:02d}"
+        lines = [f"*Categorie — {month}*\n"]
+        for c in cats:
+            budget_str = f" / {fmt_eur(c['budget'])}" if c["budget"] else ""
+            over = " ⚠️" if c["budget"] and c["spent"] > c["budget"] else ""
+            if c["spent"] > 0 or c["budget"]:
+                lines.append(f"• {c['name']}: `{fmt_eur(c['spent'])}{budget_str}`{over}")
+        await message.answer("\n".join(lines) if len(lines) > 1 else "*Nessuna spesa questo mese.*",
+                             parse_mode="Markdown")
+    except Exception as e:
+        await message.answer(f"Errore: {e}")
 
 
 async def handle_photo(message: Message, bot: Bot, state: FSMContext):
-    """OCR flow: photo → tesseract → parse → ask confirm."""
     tess = await find_tesseract()
     if not tess:
-        await message.answer("Tesseract non trovato. Installa con:\nmacOS: brew install tesseract tesseract-lang\nWindows: github.com/UB-Mannheim/tesseract")
+        await message.answer("Tesseract non trovato.\nmacOS: `brew install tesseract tesseract-lang`",
+                             parse_mode="Markdown")
         return
 
-    photo = message.photo[-1]  # highest resolution
-    await message.answer("Analisi immagine…")
+    photo = message.photo[-1]
+    await message.answer("Analisi immagine in corso…")
 
     with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
         tmp_path = tmp.name
-
     try:
         await bot.download(photo, destination=tmp_path)
         result = subprocess.run(
@@ -307,7 +366,7 @@ async def handle_photo(message: Message, bot: Bot, state: FSMContext):
         )
         raw = result.stdout.strip()
     except subprocess.TimeoutExpired:
-        await message.answer("Timeout OCR. Riprova con un'immagine più nitida.")
+        await message.answer("Timeout OCR. Riprova con immagine più nitida.")
         return
     except Exception as e:
         await message.answer(f"Errore OCR: {e}")
@@ -327,8 +386,8 @@ async def handle_photo(message: Message, bot: Bot, state: FSMContext):
 
     if not amount:
         await message.answer(
-            f"Non ho trovato un importo nell'immagine.\n\nTesto estratto:\n```\n{raw[:400]}\n```\n\n"
-            "Usa `/aggiungi <importo> <descrizione>` per aggiungere manualmente.",
+            f"Importo non trovato.\n\nTesto estratto:\n```\n{raw[:300]}\n```\n\n"
+            "Usa `/aggiungi <importo> <descrizione>` per inserire manualmente.",
             parse_mode="Markdown",
         )
         return
@@ -337,25 +396,26 @@ async def handle_photo(message: Message, bot: Bot, state: FSMContext):
     await state.set_state(FotoStates.waiting_confirm)
     await state.update_data(amount=amount, description=merchant or "Scontrino")
     await message.answer(
-        f"Ho trovato: {preview}\n\nConfermi? Rispondi *sì* o *no*.",
+        f"Trovato: {preview}\n\nSalvo?",
         parse_mode="Markdown",
+        reply_markup=confirm_keyboard(amount, merchant),
     )
 
 
-async def handle_foto_confirm(message: Message, state: FSMContext):
-    text = (message.text or "").strip().lower()
-    if text in ("sì", "si", "yes", "s", "y", "ok", "1"):
+async def callback_foto(query: CallbackQuery, state: FSMContext):
+    await query.answer()
+    if query.data == "foto_ok":
         data = await state.get_data()
         try:
             await add_transaction(data["amount"], data["description"])
-            await message.answer(
+            await query.message.edit_text(
                 f"✅ Salvato: *{fmt_eur(data['amount'])}* — {data['description']}",
                 parse_mode="Markdown",
             )
         except Exception as e:
-            await message.answer(f"Errore salvataggio: {e}")
+            await query.message.edit_text(f"Errore salvataggio: {e}")
     else:
-        await message.answer("Annullato. Usa `/aggiungi` per inserire manualmente.")
+        await query.message.edit_text("Annullato.")
     await state.clear()
 
 
@@ -366,18 +426,16 @@ async def main(token: str, db_path: str):
     DB_PATH = db_path
 
     bot = Bot(token=token)
-    storage = MemoryStorage()
-    dp = Dispatcher(storage=storage)
+    dp = Dispatcher(storage=MemoryStorage())
 
-    dp.message.register(cmd_start,    Command("start"))
-    dp.message.register(cmd_saldo,    Command("saldo"))
-    dp.message.register(cmd_spese,    Command("spese"))
-    dp.message.register(cmd_report,   Command("report"))
-    dp.message.register(cmd_aggiungi, Command("aggiungi"))
-    dp.message.register(cmd_aiuta,    Command("aiuta", "help"))
-    # FSM: photo confirmation
-    dp.message.register(handle_foto_confirm, FotoStates.waiting_confirm, F.text)
-    # Photo handler (must be last)
+    dp.message.register(cmd_start,      Command("start", "aiuta", "help"))
+    dp.message.register(cmd_saldo,      Command("saldo"))
+    dp.message.register(cmd_spese,      Command("spese"))
+    dp.message.register(cmd_report,     Command("report"))
+    dp.message.register(cmd_aggiungi,   Command("aggiungi"))
+    dp.message.register(cmd_obiettivi,  Command("obiettivi"))
+    dp.message.register(cmd_categorie,  Command("categorie"))
+    dp.callback_query.register(callback_foto, F.data.in_({"foto_ok", "foto_no"}))
     dp.message.register(lambda m, s: handle_photo(m, bot, s), F.photo)
 
     logger.info("Fehu bot avviato. DB: %s", db_path)
@@ -386,7 +444,7 @@ async def main(token: str, db_path: str):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Fehu Telegram Bot")
-    parser.add_argument("--token",   required=True, help="Token da @BotFather")
-    parser.add_argument("--db-path", required=True, help="Percorso fehu.db")
+    parser.add_argument("--token",   required=True)
+    parser.add_argument("--db-path", required=True)
     args = parser.parse_args()
     asyncio.run(main(args.token, args.db_path))

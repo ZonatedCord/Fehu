@@ -11,6 +11,7 @@ pub fn get_settings(state: tauri::State<AppState>) -> Result<HashMap<String, Str
 
     let mut map = HashMap::new();
     map.insert("ollama_url".into(), "http://localhost:11434".into());
+    map.insert("ollama_model".into(), "qwen2.5-coder:7b".into());
     map.insert("tesseract_path".into(), "".into());
     map.insert("currency_symbol".into(), "€".into());
     map.insert("onboarded".into(), "false".into());

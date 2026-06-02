@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
     LayoutDashboard, ArrowUpDown, Tag, Database, Camera, PiggyBank,
-    Settings, Info, Calculator, RefreshCw, Sun, Moon,
+    Settings, Info, Calculator, RefreshCw, Sun, Moon, BookOpen,
   } from '@lucide/svelte';
   import { currentPage, theme, updateAvailable } from '../lib/stores';
   import { api } from '../lib/api';
@@ -26,6 +26,7 @@
   ];
 
   const utilityNav: { label: string; page: Page; icon: typeof LayoutDashboard }[] = [
+    { label: 'Guida',        page: 'guida',    icon: BookOpen },
     { label: 'Impostazioni', page: 'settings', icon: Settings },
     { label: 'About',        page: 'about',    icon: Info },
   ];

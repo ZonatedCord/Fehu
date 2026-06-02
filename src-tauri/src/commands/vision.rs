@@ -127,7 +127,7 @@ pub async fn analyze_receipt(
     image_path: String,
 ) -> AppResult<ReceiptData> {
     // Read settings synchronously; release lock before any async work
-    let (tess_override, ollama_url) = {
+    let (tess_override, ollama_url, ollama_model) = {
         let db = state.db.0.lock().unwrap();
         let tess = db
             .query_row("SELECT value FROM settings WHERE key='tesseract_path'", [], |r| {
@@ -139,7 +139,12 @@ pub async fn analyze_receipt(
                 r.get::<_, String>(0)
             })
             .unwrap_or_else(|_| "http://localhost:11434".into());
-        (tess, url)
+        let model = db
+            .query_row("SELECT value FROM settings WHERE key='ollama_model'", [], |r| {
+                r.get::<_, String>(0)
+            })
+            .unwrap_or_else(|_| "qwen2.5-coder:7b".into());
+        (tess, url, model)
     };
 
     let tess = find_tesseract(&tess_override)
@@ -265,7 +270,7 @@ Lavoro=hosting/cloud/software/domains/Cloudflare/AWS/Adobe/professional; Altro=e
 Transaction: {merchant}\nCategory:"
     );
     let parse_body = serde_json::json!({
-        "model": "qwen2.5-coder:7b",
+        "model": ollama_model,
         "prompt": parse_prompt,
         "stream": false,
         "keep_alive": 0
