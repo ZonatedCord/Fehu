@@ -12,6 +12,7 @@ pub struct DepsStatus {
     pub tesseract: bool,
     pub ollama: bool,
     pub tesseract_version: Option<String>,
+    pub pip_bot: bool,
 }
 
 #[tauri::command]
@@ -74,7 +75,13 @@ pub async fn check_dependencies() -> Result<DepsStatus, AppError> {
         .map(|r| r.status().is_success())
         .unwrap_or(false);
 
-    Ok(DepsStatus { tesseract, ollama, tesseract_version })
+    let pip_bot = std::process::Command::new("python3")
+        .args(["-c", "import aiogram, aiosqlite"])
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false);
+
+    Ok(DepsStatus { tesseract, ollama, tesseract_version, pip_bot })
 }
 
 #[tauri::command]

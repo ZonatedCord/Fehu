@@ -37,12 +37,12 @@
   ]);
 
   let INPS_RATES = $state({
-    gestione_separata: { aliquota: 0.2623, minimale: 0, massimale: 119650, reddito_minimale: 0 },
-    artigiani:         { aliquota: 0.24036, minimale: 4208, massimale: 55448, reddito_minimale: 17504 },
-    commercianti:      { aliquota: 0.2448,  minimale: 4292, massimale: 55448, reddito_minimale: 17504 },
+    gestione_separata: { aliquota: 0.2607, minimale: 0, massimale: 122295, reddito_minimale: 0 },
+    artigiani:         { aliquota: 0.24,   minimale: 4521, massimale: 56224, reddito_minimale: 18808 },
+    commercianti:      { aliquota: 0.2448,  minimale: 4612, massimale: 56224, reddito_minimale: 18808 },
   });
 
-  let ratesAnno = $state(2024);
+  let ratesAnno = $state(2026);
   let ratesLoading = $state(false);
   let ratesCustom = $state(false);
   let showRatesEditor = $state(false);
@@ -51,7 +51,7 @@
   let editGs    = $state({ aliquota: 26.23, massimale: 119650 });
   let editArt   = $state({ aliquota: 24.04, minimale: 4208, massimale: 55448 });
   let editComm  = $state({ aliquota: 24.48, minimale: 4292, massimale: 55448 });
-  let editAnno  = $state(2024);
+  let editAnno  = $state(2026);
 
   onMount(async () => {
     // Check for user override first
@@ -149,8 +149,8 @@
     if (type === 'gestione_separata') {
       return Math.min(base, r.massimale) * r.aliquota;
     }
-    const variabile = Math.max(base - 17504, 0); // contributi sul reddito eccedente il minimale
-    return r.minimale + Math.min(variabile, r.massimale - 17504) * r.aliquota;
+    const variabile = Math.max(base - r.reddito_minimale, 0);
+    return r.minimale + Math.min(variabile, r.massimale - r.reddito_minimale) * r.aliquota;
   }
 
   function calcIrpef(reddito: number): number {
@@ -158,8 +158,8 @@
     let tax = 0;
     if (reddito <= 28000) return reddito * 0.23;
     tax += 28000 * 0.23;
-    if (reddito <= 50000) return tax + (reddito - 28000) * 0.35;
-    tax += 22000 * 0.35;
+    if (reddito <= 50000) return tax + (reddito - 28000) * 0.33;
+    tax += 22000 * 0.33;
     return tax + (reddito - 50000) * 0.43;
   }
 

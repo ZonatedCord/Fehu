@@ -1,14 +1,14 @@
 {
   "_comment": "Aliquote fiscali italiane — aggiornare ogni anno. Fetch da PIva.svelte.",
-  "_anno": 2024,
+  "_anno": 2026,
   "inps": {
-    "gestione_separata": { "aliquota": 0.2623, "minimale": 0, "massimale": 119650 },
-    "artigiani":         { "aliquota": 0.24036, "minimale": 4208, "massimale": 55448, "reddito_minimale": 17504 },
-    "commercianti":      { "aliquota": 0.2448,  "minimale": 4292, "massimale": 55448, "reddito_minimale": 17504 }
+    "gestione_separata": { "aliquota": 0.2607, "minimale": 0, "massimale": 122295, "reddito_minimale": 0 },
+    "artigiani":         { "aliquota": 0.24,   "minimale": 4521, "massimale": 56224, "reddito_minimale": 18808 },
+    "commercianti":      { "aliquota": 0.2448,  "minimale": 4612, "massimale": 56224, "reddito_minimale": 18808 }
   },
   "irpef": [
     { "fino_a": 28000, "aliquota": 0.23 },
-    { "fino_a": 50000, "aliquota": 0.35 },
+    { "fino_a": 50000, "aliquota": 0.33 },
     { "fino_a": null,  "aliquota": 0.43 }
   ],
   "detrazione_lavoro_autonomo": {

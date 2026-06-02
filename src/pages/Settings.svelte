@@ -29,7 +29,7 @@
   let ollamaPing = $state('');
   let ollamaModels = $state<string[]>([]);
   let copied = $state('');
-  let depsStatus = $state<{ tesseract: boolean; ollama: boolean; tesseract_version: string | null } | null>(null);
+  let depsStatus = $state<{ tesseract: boolean; ollama: boolean; tesseract_version: string | null; pip_bot: boolean } | null>(null);
   let installing = $state<Record<string, boolean>>({});
   let installMsg = $state<Record<string, string>>({});
 
@@ -292,12 +292,16 @@
         </button>
       </div>
 
+      {#if !depsStatus?.pip_bot}
       <div class="dep-actions" style="margin-bottom: 0.25rem;">
         <button class="btn-install" onclick={() => installDep('pip-bot')} disabled={installing['pip-bot']}>
           {installing['pip-bot'] ? 'Installazione…' : '↓ Installa dipendenze Python (aiogram + aiosqlite)'}
         </button>
       </div>
       {#if installMsg['pip-bot']}<p class="install-msg" class:ok={installMsg['pip-bot'].startsWith('✓')} style="margin-bottom:0.5rem;">{installMsg['pip-bot']}</p>{/if}
+      {:else}
+      <p class="install-msg ok" style="margin-bottom:0.5rem;">✓ Dipendenze Python installate.</p>
+      {/if}
 
       {#if telegramGuide}
         <div class="guide-box">
