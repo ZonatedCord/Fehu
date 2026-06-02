@@ -9,16 +9,17 @@ pub fn get_dashboard_stats(
     end_date: Option<String>,
 ) -> AppResult<DashboardStats> {
     let conn = state.db.0.lock().unwrap();
-    let filter = "(?1 IS NULL OR date >= ?1) AND (?2 IS NULL OR date <= ?2)";
+    let filter_kpi = "(?1 IS NULL OR date >= ?1) AND (?2 IS NULL OR date <= ?2) AND source != 'goal'";
+    let filter_charts = "(?1 IS NULL OR date >= ?1) AND (?2 IS NULL OR date <= ?2)";
 
     let total_income: f64 = conn.query_row(
-        &format!("SELECT COALESCE(SUM(amount),0) FROM transactions WHERE type='income' AND {filter}"),
+        &format!("SELECT COALESCE(SUM(amount),0) FROM transactions WHERE type='income' AND {filter_kpi}"),
         params![start_date, end_date],
         |r| r.get(0),
     )?;
 
     let total_expense: f64 = conn.query_row(
-        &format!("SELECT COALESCE(SUM(amount),0) FROM transactions WHERE type='expense' AND {filter}"),
+        &format!("SELECT COALESCE(SUM(amount),0) FROM transactions WHERE type='expense' AND {filter_kpi}"),
         params![start_date, end_date],
         |r| r.get(0),
     )?;
@@ -27,7 +28,7 @@ pub fn get_dashboard_stats(
         "SELECT strftime('%Y-%m',date) AS month,
                 SUM(CASE WHEN type='income' THEN amount ELSE 0 END),
                 SUM(CASE WHEN type='expense' THEN amount ELSE 0 END)
-         FROM transactions WHERE {filter}
+         FROM transactions WHERE {filter_charts}
          GROUP BY month ORDER BY month"
     ))?;
     let monthly: Vec<MonthlySummary> = stmt
