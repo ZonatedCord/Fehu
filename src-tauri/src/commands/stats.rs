@@ -9,7 +9,7 @@ pub fn get_dashboard_stats(
     end_date: Option<String>,
 ) -> AppResult<DashboardStats> {
     let conn = state.db.0.lock().unwrap();
-    let filter = "(?1 IS NULL OR date >= ?1) AND (?2 IS NULL OR date <= ?2)";
+    let filter = "(?1 IS NULL OR date >= ?1) AND (?2 IS NULL OR date <= ?2) AND source != 'goal'";
 
     let total_income: f64 = conn.query_row(
         &format!("SELECT COALESCE(SUM(amount),0) FROM transactions WHERE type='income' AND {filter}"),
@@ -36,7 +36,7 @@ pub fn get_dashboard_stats(
         })?
         .collect::<rusqlite::Result<_>>()?;
 
-    let cat_filter = "(?1 IS NULL OR t.date >= ?1) AND (?2 IS NULL OR t.date <= ?2)";
+    let cat_filter = "(?1 IS NULL OR t.date >= ?1) AND (?2 IS NULL OR t.date <= ?2) AND t.source != 'goal'";
     let mut stmt2 = conn.prepare(&format!(
         "SELECT t.category_id, c.name, c.color, SUM(t.amount)
          FROM transactions t LEFT JOIN categories c ON c.id=t.category_id

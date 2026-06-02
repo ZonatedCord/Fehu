@@ -84,7 +84,7 @@ pub fn contribute_to_goal(
 
     conn.execute(
         "INSERT INTO transactions (amount,type,date,description,notes,source,metodo,category_id)
-         VALUES (?1,'expense',?2,?3,'','manual',?4,?5)",
+         VALUES (?1,'expense',?2,?3,'','goal',?4,?5)",
         params![amount, date, format!("Versamento: {}", goal_name), metodo, cat_id],
     )?;
     conn.execute(
