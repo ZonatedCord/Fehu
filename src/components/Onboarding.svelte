@@ -8,6 +8,11 @@
   let step = $state(1);
   let deps = $state<DepsStatus | null>(null);
   let checking = $state(false);
+  let installing = $state(false);
+  let installMsg = $state('');
+  let copied = $state(false);
+
+  const OLLAMA_PROMPT = "Devo configurare Ollama sul mio computer per farlo funzionare con un'app desktop chiamata Fehu (tracker finanziario locale) che lo usa per categorizzare automaticamente le spese. Aiutami a: 1) installare Ollama, 2) scegliere un modello leggero per classificazione testuale (llama3.2, qwen2.5, mistral o phi4-mini), 3) verificare che funzioni. Dimmi prima il mio sistema operativo.";
 
   async function goToStep2() {
     step = 2;
@@ -21,10 +26,22 @@
     }
   }
 
-  async function complete() {
+  async function installTesseract() {
+    installing = true; installMsg = 'Installazione Tesseract…';
     try {
-      await api.setSetting('onboarded', 'true');
-    } catch {}
+      const r = await api.installDependency('tesseract');
+      installMsg = r.success ? '✓ Tesseract installato.' : r.output.slice(0, 200);
+      if (r.success) deps = await api.checkDependencies();
+    } catch (e: any) { installMsg = String(e); }
+    finally { installing = false; }
+  }
+
+  function copyOllamaPrompt() {
+    navigator.clipboard.writeText(OLLAMA_PROMPT).then(() => { copied = true; setTimeout(() => copied = false, 1500); });
+  }
+
+  async function complete() {
+    try { await api.setSetting('onboarded', 'true'); } catch {}
     onComplete();
   }
 </script>
@@ -70,17 +87,19 @@
               <CheckCircle size={20} color="#4ade80" />
               <div>
                 <span class="dep-name">Tesseract OCR</span>
-                {#if deps.tesseract_version}
-                  <span class="dep-version">{deps.tesseract_version}</span>
-                {/if}
+                {#if deps.tesseract_version}<span class="dep-version">{deps.tesseract_version}</span>{/if}
               </div>
             {:else}
               <XCircle size={20} color="#f87171" />
               <div>
                 <span class="dep-name">Tesseract OCR — non trovato</span>
-                <code class="install-cmd">macOS: brew install tesseract tesseract-lang</code>
-                <code class="install-cmd">Windows: scarica da github.com/UB-Mannheim/tesseract</code>
-                <span class="dep-hint">Percorso Windows default: C:\Program Files\Tesseract-OCR\</span>
+                <div class="dep-actions">
+                  <button class="btn-install-dep" onclick={installTesseract} disabled={installing}>
+                    {installing ? 'Installazione…' : '↓ Installa (macOS)'}
+                  </button>
+                  <code class="install-cmd">Windows: github.com/UB-Mannheim/tesseract</code>
+                </div>
+                {#if installMsg}<span class="dep-install-msg" class:ok={installMsg.startsWith('✓')}>{installMsg}</span>{/if}
               </div>
             {/if}
           </div>
@@ -92,8 +111,11 @@
             {:else}
               <XCircle size={20} color="#f87171" />
               <div>
-                <span class="dep-name">Ollama — non trovato (opzionale)</span>
-                <span class="dep-hint">Senza Ollama, la categoria viene stimata da parole chiave.</span>
+                <span class="dep-name">Ollama — non trovato <span class="optional">(opzionale)</span></span>
+                <span class="dep-hint">Senza Ollama la categoria viene stimata da parole chiave.</span>
+                <button class="btn-install-dep" onclick={copyOllamaPrompt} style="margin-top:0.25rem;">
+                  {copied ? '✓ Copiato' : 'Copia prompt AI per installazione guidata'}
+                </button>
               </div>
             {/if}
           </div>
@@ -140,13 +162,13 @@
   .steps { display: flex; gap: 0.4rem; }
   .step-dot {
     width: 6px; height: 6px; border-radius: 50%;
-    background: #2e2e4e; transition: background 0.2s;
+    background: var(--border); transition: background 0.2s;
   }
-  .step-dot.active { background: #6366f1; }
-  .step-dot.done { background: #4ade80; }
+  .step-dot.active { background: var(--accent); }
+  .step-dot.done { background: var(--income); }
 
-  .rune { font-size: 2.5rem; color: #a5b4fc; }
-  .rune.success { color: #4ade80; }
+  .rune { font-size: 2.5rem; color: var(--accent-lt); }
+  .rune.success { color: var(--income); }
   h1 { margin: 0; font-size: 1.4rem; }
   .body { margin: 0; color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; }
   .body-small { margin: 0; color: var(--text-dim); font-size: 0.82rem; line-height: 1.6; }
@@ -162,26 +184,35 @@
     display: flex; align-items: flex-start; gap: 0.75rem;
     font-size: 0.875rem;
   }
-  .dep-name { color: #ccc; display: block; }
+  .dep-name { color: var(--text); display: block; }
+  .optional { color: var(--text-dim); font-size: 0.78rem; font-weight: 400; }
   .dep-version { color: var(--text-dim); font-size: 0.78rem; display: block; margin-top: 0.15rem; }
   .dep-hint { color: var(--text-dim); font-size: 0.78rem; display: block; margin-top: 0.15rem; }
+  .dep-actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.3rem; }
   .install-cmd {
-    display: block; margin-top: 0.25rem;
-    background: var(--bg-base); color: #a5b4fc;
+    background: var(--bg-elevated); color: var(--accent-lt);
     padding: 0.2rem 0.5rem; border-radius: 4px;
-    font-size: 0.8rem; font-family: monospace;
+    font-size: 0.78rem; font-family: monospace;
   }
+  .btn-install-dep {
+    background: var(--accent); color: #fff; border: none;
+    border-radius: 7px; padding: 0.35rem 0.75rem;
+    font-size: 0.78rem; font-weight: 600; cursor: pointer;
+  }
+  .btn-install-dep:disabled { opacity: 0.6; cursor: not-allowed; }
+  .dep-install-msg { font-size: 0.75rem; color: var(--expense); display: block; margin-top: 0.25rem; }
+  .dep-install-msg.ok { color: var(--income); }
 
   .row { display: flex; gap: 0.75rem; justify-content: flex-end; }
   .btn-primary {
-    background: #6366f1; color: #fff; border: none;
-    padding: 0.65rem 1.4rem; border-radius: 7px;
-    cursor: pointer; font-size: 0.9rem;
+    background: var(--accent); color: #fff; border: none;
+    padding: 0.65rem 1.4rem; border-radius: 10px;
+    cursor: pointer; font-size: 0.9rem; font-weight: 600;
   }
   .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
   .btn-ghost {
     background: none; border: 1px solid var(--border); color: var(--text-dim);
-    padding: 0.65rem 1rem; border-radius: 7px; cursor: pointer; font-size: 0.9rem;
+    padding: 0.65rem 1rem; border-radius: 10px; cursor: pointer; font-size: 0.9rem;
   }
-  .btn-ghost:hover { color: #aaa; }
+  .btn-ghost:hover { color: var(--text-muted); }
 </style>

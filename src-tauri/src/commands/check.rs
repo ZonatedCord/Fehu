@@ -86,7 +86,14 @@ pub async fn install_dependency(dep: String) -> Result<InstallResult, AppError> 
             #[cfg(not(target_os = "macos"))]
             { return Ok(InstallResult { success: false, output: "Installa Tesseract manualmente da https://github.com/UB-Mannheim/tesseract/wiki".into() }); }
         }
-        "pip-bot" => ("pip3", vec!["install", "aiogram", "aiosqlite"]),
+        "pip-bot" => {
+            // PEP 668: macOS/Linux Homebrew Python blocks global installs.
+            // Use --break-system-packages to explicitly override.
+            #[cfg(target_os = "windows")]
+            { ("pip3", vec!["install", "aiogram", "aiosqlite"]) }
+            #[cfg(not(target_os = "windows"))]
+            { ("pip3", vec!["install", "--break-system-packages", "aiogram", "aiosqlite"]) }
+        }
         _ => return Ok(InstallResult { success: false, output: format!("Dipendenza sconosciuta: {dep}") }),
     };
 

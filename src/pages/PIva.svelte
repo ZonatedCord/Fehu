@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { openUrl } from '@tauri-apps/plugin-opener';
 
   type Regime = 'forfettario' | 'ordinario' | 'semplificato';
   type InpsType = 'gestione_separata' | 'artigiani' | 'commercianti';
@@ -43,13 +44,35 @@
 
   let ratesAnno = $state(2024);
   let ratesLoading = $state(false);
+  let ratesCustom = $state(false);
+  let showRatesEditor = $state(false);
+
+  // Editable overrides (mirror of INPS_RATES for the form)
+  let editGs    = $state({ aliquota: 26.23, massimale: 119650 });
+  let editArt   = $state({ aliquota: 24.04, minimale: 4208, massimale: 55448 });
+  let editComm  = $state({ aliquota: 24.48, minimale: 4292, massimale: 55448 });
+  let editAnno  = $state(2024);
 
   onMount(async () => {
+    // Check for user override first
+    const override = localStorage.getItem(CACHE_KEY + '_override');
+    if (override) {
+      applyRates(JSON.parse(override));
+      syncEditorFromRates();
+      ratesCustom = true;
+      return;
+    }
+    await fetchRates();
+  });
+
+  async function fetchRates(force = false) {
     try {
-      const cached = localStorage.getItem(CACHE_KEY);
-      if (cached) {
-        const { data, ts } = JSON.parse(cached);
-        if (Date.now() - ts < CACHE_TTL) { applyRates(data); return; }
+      if (!force) {
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
+          const { data, ts } = JSON.parse(cached);
+          if (Date.now() - ts < CACHE_TTL) { applyRates(data); syncEditorFromRates(); return; }
+        }
       }
       ratesLoading = true;
       const res = await fetch(RATES_URL, { signal: AbortSignal.timeout(5000) });
@@ -57,9 +80,10 @@
         const data = await res.json();
         localStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() }));
         applyRates(data);
+        syncEditorFromRates();
       }
     } catch {} finally { ratesLoading = false; }
-  });
+  }
 
   function applyRates(data: any) {
     if (data.ateco) atecoOptions = data.ateco;
@@ -71,6 +95,35 @@
       };
     }
     if (data._anno) ratesAnno = data._anno;
+  }
+
+  function syncEditorFromRates() {
+    editGs   = { aliquota: +(INPS_RATES.gestione_separata.aliquota * 100).toFixed(4), massimale: INPS_RATES.gestione_separata.massimale };
+    editArt  = { aliquota: +(INPS_RATES.artigiani.aliquota * 100).toFixed(4), minimale: INPS_RATES.artigiani.minimale, massimale: INPS_RATES.artigiani.massimale };
+    editComm = { aliquota: +(INPS_RATES.commercianti.aliquota * 100).toFixed(4), minimale: INPS_RATES.commercianti.minimale, massimale: INPS_RATES.commercianti.massimale };
+    editAnno = ratesAnno;
+  }
+
+  function saveCustomRates() {
+    const override = {
+      _anno: editAnno,
+      inps: {
+        gestione_separata: { aliquota: editGs.aliquota / 100, massimale: editGs.massimale, minimale: 0 },
+        artigiani:         { aliquota: editArt.aliquota / 100, minimale: editArt.minimale, massimale: editArt.massimale, reddito_minimale: 17504 },
+        commercianti:      { aliquota: editComm.aliquota / 100, minimale: editComm.minimale, massimale: editComm.massimale, reddito_minimale: 17504 },
+      }
+    };
+    localStorage.setItem(CACHE_KEY + '_override', JSON.stringify(override));
+    applyRates(override);
+    ratesCustom = true;
+    showRatesEditor = false;
+  }
+
+  function resetRates() {
+    localStorage.removeItem(CACHE_KEY + '_override');
+    localStorage.removeItem(CACHE_KEY);
+    ratesCustom = false;
+    fetchRates(true);
   }
 
   const inpsOptions: { label: string; value: InpsType }[] = [
@@ -194,12 +247,50 @@
   <div class="page-header">
     <div class="header-row">
       <h1>Calcolatore P.IVA</h1>
-      <span class="anno-badge" class:loading={ratesLoading}>
-        {ratesLoading ? 'Aggiornamento…' : `Aliquote ${ratesAnno}`}
+      <span class="anno-badge" class:loading={ratesLoading} class:custom={ratesCustom}>
+        {ratesLoading ? 'Aggiornamento…' : ratesCustom ? 'Aliquote personalizzate' : `Aliquote ${ratesAnno}`}
       </span>
+      <button class="btn-rate-action" onclick={() => fetchRates(true)} disabled={ratesLoading} title="Aggiorna da GitHub">↻</button>
+      <button class="btn-rate-action" onclick={() => showRatesEditor = !showRatesEditor} title="Modifica manuale">✎</button>
     </div>
     <p class="subtitle">Stima del carico fiscale per regime forfettario, ordinario e semplificato.</p>
   </div>
+
+  {#if showRatesEditor}
+    <div class="rates-editor">
+      <div class="rates-editor-title">Modifica aliquote manuale</div>
+      <div class="rates-grid">
+        <div class="rate-group">
+          <div class="rate-group-label">Gestione Separata</div>
+          <label>Aliquota %<input type="number" bind:value={editGs.aliquota} step="0.01" min="0" max="50" /></label>
+          <label>Massimale €<input type="number" bind:value={editGs.massimale} step="100" /></label>
+        </div>
+        <div class="rate-group">
+          <div class="rate-group-label">Artigiani IVS</div>
+          <label>Aliquota %<input type="number" bind:value={editArt.aliquota} step="0.001" min="0" max="50" /></label>
+          <label>Minimale €<input type="number" bind:value={editArt.minimale} step="10" /></label>
+          <label>Massimale €<input type="number" bind:value={editArt.massimale} step="100" /></label>
+        </div>
+        <div class="rate-group">
+          <div class="rate-group-label">Commercianti IVS</div>
+          <label>Aliquota %<input type="number" bind:value={editComm.aliquota} step="0.001" min="0" max="50" /></label>
+          <label>Minimale €<input type="number" bind:value={editComm.minimale} step="10" /></label>
+          <label>Massimale €<input type="number" bind:value={editComm.massimale} step="100" /></label>
+        </div>
+      </div>
+      <label class="anno-label">Anno di riferimento<input type="number" bind:value={editAnno} min="2020" max="2030" style="width:80px" /></label>
+      <div class="rates-actions">
+        <button class="btn-save-rates" onclick={saveCustomRates}>Salva</button>
+        {#if ratesCustom}<button class="btn-reset-rates" onclick={resetRates}>Ripristina da GitHub</button>{/if}
+      </div>
+      <div class="fonti-ufficiali">
+        <span>Fonti ufficiali:</span>
+        <button class="btn-fonte" onclick={() => openUrl('https://www.inps.it/it/it/dettaglio-scheda.contribuzione-e-aliquote.inps-gestione-artigiani-e-commercianti.html')}>INPS Artigiani/Commercianti</button>
+        <button class="btn-fonte" onclick={() => openUrl('https://www.inps.it/it/it/dettaglio-scheda.schede-informative.gestione-separata-inps.html')}>INPS Gestione Separata</button>
+        <button class="btn-fonte" onclick={() => openUrl('https://www.agenziaentrate.gov.it/portale/web/guest/schede/dichiarazioni/irpef-informazioni')}>Agenzia Entrate IRPEF</button>
+      </div>
+    </div>
+  {/if}
 
   <div class="tabs">
     {#each (['forfettario', 'ordinario', 'semplificato'] as Regime[]) as tab}
@@ -363,6 +454,24 @@
   h1 { margin: 0; font-size: 1.5rem; }
   .anno-badge { font-size: 0.75rem; background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent-lt); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); padding: 0.15rem 0.6rem; border-radius: 6px; font-weight: 600; }
   .anno-badge.loading { color: var(--text-dim); background: var(--bg-elevated); border-color: var(--border); }
+  .anno-badge.custom { background: color-mix(in srgb, #f97316 12%, transparent); color: #f97316; border-color: color-mix(in srgb, #f97316 30%, transparent); }
+  .btn-rate-action { background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-muted); border-radius: 6px; padding: 0.15rem 0.5rem; cursor: pointer; font-size: 0.85rem; }
+  .btn-rate-action:hover { color: var(--text); }
+  .btn-rate-action:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .rates-editor { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .rates-editor-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); }
+  .rates-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  .rate-group { display: flex; flex-direction: column; gap: 0.4rem; }
+  .rate-group-label { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.2rem; }
+  .rate-group label, .anno-label { display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.75rem; color: var(--text-dim); }
+  .rate-group input, .anno-label input { padding: 0.35rem 0.5rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-base); color: var(--text); font-size: 0.82rem; width: 100%; }
+  .rates-actions { display: flex; gap: 0.5rem; }
+  .btn-save-rates { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 0.4rem 0.9rem; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+  .btn-reset-rates { background: none; border: 1px solid var(--border); color: var(--text-muted); border-radius: 8px; padding: 0.4rem 0.9rem; font-size: 0.82rem; cursor: pointer; }
+  .fonti-ufficiali { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; font-size: 0.75rem; color: var(--text-dim); padding-top: 0.5rem; border-top: 1px solid var(--border2); }
+  .btn-fonte { background: none; border: none; color: var(--accent-lt); font-size: 0.75rem; cursor: pointer; text-decoration: underline; padding: 0; }
+  .btn-fonte:hover { color: var(--accent); }
   .subtitle { color: var(--text-dim); font-size: 0.875rem; margin: 0; }
 
   .tabs {
