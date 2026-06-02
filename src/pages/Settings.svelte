@@ -156,7 +156,13 @@
 
 <div class="page">
   <div class="page-header">
-    <h1>Impostazioni</h1>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.3rem;">
+      <h1 style="margin:0;">Impostazioni</h1>
+      <button class="btn-ghost" style="font-size:0.78rem;padding:0.25rem 0.6rem;"
+        onclick={async () => { depsStatus = await api.checkDependencies(); }}>
+        ↻ Ricontrolla dipendenze
+      </button>
+    </div>
     <p class="subtitle">Configurazione dell'app. Le modifiche vengono salvate nel database locale.</p>
   </div>
 
@@ -199,9 +205,16 @@
     <section>
       <div class="section-header">
         <h2>LLM — Ollama</h2>
-        <button class="btn-guide-toggle" onclick={() => ollamaGuide = !ollamaGuide}>
-          {ollamaGuide ? 'Chiudi guida' : 'Come configurare'}
-        </button>
+        <div style="display:flex;gap:0.5rem;align-items:center;">
+          {#if depsStatus}
+            <span class="dep-status" class:ok={depsStatus.ollama} class:missing={!depsStatus.ollama}>
+              {depsStatus.ollama ? '✓ in esecuzione' : '✗ non trovato'}
+            </span>
+          {/if}
+          <button class="btn-guide-toggle" onclick={() => ollamaGuide = !ollamaGuide}>
+            {ollamaGuide ? 'Chiudi guida' : 'Come configurare'}
+          </button>
+        </div>
       </div>
 
       {#if ollamaGuide}
