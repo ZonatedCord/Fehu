@@ -9,6 +9,7 @@
 [![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri%202-24C8D8?style=flat-square&logo=tauri)](https://tauri.app)
 [![Svelte 5](https://img.shields.io/badge/Svelte-5-FF3E00?style=flat-square&logo=svelte&logoColor=white)](https://svelte.dev)
 [![Release](https://img.shields.io/github/v/release/ZonatedCord/Fehu?style=flat-square&color=6366f1)](../../releases/latest)
+[![Built with Claude Code](https://img.shields.io/badge/built%20with-Claude%20Code-D97706?style=flat-square&logo=anthropic&logoColor=white)](https://claude.ai/code)
 
 *Named after the Elder Futhark rune ᚠ — Old Norse for wealth.*
 
@@ -138,6 +139,6 @@ MIT — see [LICENSE](LICENSE).
 
 <div align="center">
 
-Built by [Marco Barlera](https://marcobarlera.com)
+Built by [Marco Barlera](https://marcobarlera.com) with [Claude Code](https://claude.ai/code)
 
 </div>

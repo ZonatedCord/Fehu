@@ -80,6 +80,6 @@ jobs:
             ```
             xattr -dr com.apple.quarantine /Applications/Fehu.app
             ```
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
