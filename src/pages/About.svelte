@@ -26,7 +26,13 @@
 
 <div class="page">
   <div class="hero">
-    <div class="rune">ᚠ</div>
+    <div class="rune">
+      <svg viewBox="0 0 28 32" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+        <line x1="8" y1="3" x2="8" y2="29" />
+        <line x1="8" y1="9" x2="22" y2="5" />
+        <line x1="8" y1="17" x2="22" y2="13" />
+      </svg>
+    </div>
     <div>
       <h1>Fehu</h1>
       <p class="tagline">Tracker finanziario locale. Nessun cloud, nessuna API esterna.</p>
@@ -92,8 +98,10 @@
     border-bottom: 1px solid var(--border);
   }
   .rune {
-    font-size: 3.5rem; line-height: 1;
     color: var(--accent-lt); flex-shrink: 0;
+  }
+  .rune svg {
+    width: 56px; height: 64px;
   }
   h1 { margin: 0 0 0.25rem; font-size: 2rem; letter-spacing: 0.04em; }
   .tagline { margin: 0 0 0.3rem; color: var(--text-dim); font-size: 0.9rem; }

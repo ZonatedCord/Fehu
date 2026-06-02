@@ -48,9 +48,9 @@
   let showRatesEditor = $state(false);
 
   // Editable overrides (mirror of INPS_RATES for the form)
-  let editGs    = $state({ aliquota: 26.23, massimale: 119650 });
-  let editArt   = $state({ aliquota: 24.04, minimale: 4208, massimale: 55448 });
-  let editComm  = $state({ aliquota: 24.48, minimale: 4292, massimale: 55448 });
+  let editGs    = $state({ aliquota: 26.07, massimale: 122295 });
+  let editArt   = $state({ aliquota: 24.00, minimale: 4521, massimale: 56224 });
+  let editComm  = $state({ aliquota: 24.48, minimale: 4612, massimale: 56224 });
   let editAnno  = $state(2026);
 
   onMount(async () => {
@@ -71,7 +71,8 @@
         const cached = localStorage.getItem(CACHE_KEY);
         if (cached) {
           const { data, ts } = JSON.parse(cached);
-          if (Date.now() - ts < CACHE_TTL) { applyRates(data); syncEditorFromRates(); return; }
+          const annoOk = !data._anno || data._anno >= 2026;
+          if (annoOk && Date.now() - ts < CACHE_TTL) { applyRates(data); syncEditorFromRates(); return; }
         }
       }
       ratesLoading = true;
