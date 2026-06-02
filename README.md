@@ -78,12 +78,18 @@ Download the latest release from [**Releases**](../../releases/latest):
 |---|---|
 | macOS Apple Silicon | `Fehu_*_aarch64.dmg` |
 | macOS Intel | `Fehu_*_x86_64.dmg` |
-| Windows | `Fehu_*_x64-setup.exe` |
+| Windows | `Fehu_*_x64_en-US.msi` (consigliato) oppure `Fehu_*_x64-setup.exe` |
 
 > **macOS — Gatekeeper:** if the app is blocked on first launch, run:
 > ```bash
 > xattr -dr com.apple.quarantine /Applications/Fehu.app
 > ```
+
+> **Windows — SmartScreen:** the app is not commercially signed (open source, free). If Windows blocks it:
+> 1. Click **"Ulteriori informazioni"** (More info)
+> 2. Click **"Esegui comunque"** (Run anyway)
+>
+> Alternatively use the `.msi` installer which is less likely to be flagged.
 
 ---
 
