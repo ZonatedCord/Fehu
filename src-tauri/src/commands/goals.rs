@@ -27,6 +27,16 @@ pub fn create_goal(state: State<AppState>, name: String, target: f64, color: Str
 }
 
 #[tauri::command]
+pub fn update_goal(state: State<AppState>, id: i64, name: String, target: f64, color: String) -> AppResult<()> {
+    if name.trim().is_empty() { return Err(AppError::Validation("Nome obbligatorio".into())); }
+    if target <= 0.0 { return Err(AppError::Validation("Target deve essere positivo".into())); }
+    let conn = state.db.0.lock().unwrap();
+    let rows = conn.execute("UPDATE goals SET name=?1, target=?2, color=?3 WHERE id=?4", params![name.trim(), target, color, id])?;
+    if rows == 0 { return Err(AppError::NotFound); }
+    Ok(())
+}
+
+#[tauri::command]
 pub fn update_goal_saved(state: State<AppState>, id: i64, saved: f64) -> AppResult<()> {
     let conn = state.db.0.lock().unwrap();
     let rows = conn.execute("UPDATE goals SET saved=?1 WHERE id=?2", params![saved, id])?;

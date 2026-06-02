@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { PiggyBank, Plus, Trash2 } from '@lucide/svelte';
+  import { PiggyBank, Plus, Trash2, Pencil, Check, X } from '@lucide/svelte';
   import { api } from '../lib/api';
   import type { Goal } from '../lib/types';
 
@@ -12,6 +12,10 @@
   let newColor = $state('#6366f1');
   let saving = $state(false);
   let goalMetodo = $state<Record<number, 'contanti' | 'carta'>>({});
+  let editingId = $state<number | null>(null);
+  let editName = $state('');
+  let editTarget = $state(0);
+  let editColor = $state('#6366f1');
 
   function getMetodo(goalId: number): 'contanti' | 'carta' {
     return goalMetodo[goalId] ?? 'carta';
@@ -44,6 +48,22 @@
     const date = new Date().toISOString().slice(0, 10);
     try {
       await api.contributeToGoal(goal.id, amount, metodo, date);
+      await load();
+    } catch (e: any) { error = e.message ?? String(e); }
+  }
+
+  function startEdit(goal: Goal) {
+    editingId = goal.id;
+    editName = goal.name;
+    editTarget = goal.target;
+    editColor = goal.color;
+  }
+
+  async function saveEdit(id: number) {
+    if (!editName.trim() || editTarget <= 0) return;
+    try {
+      await api.updateGoal(id, editName.trim(), editTarget, editColor);
+      editingId = null;
       await load();
     } catch (e: any) { error = e.message ?? String(e); }
   }
@@ -100,10 +120,19 @@
       {@const p = pct(goal)}
       <div class="goal-card" style="--c: {goal.color}">
         <div class="goal-header">
-          <span class="goal-name">{goal.name}</span>
-          <button class="btn-del" onclick={() => rimuovi(goal.id)} title="Elimina">
-            <Trash2 size={13} />
-          </button>
+          {#if editingId === goal.id}
+            <input class="edit-name" bind:value={editName} />
+            <input class="edit-target" type="number" bind:value={editTarget} min="1" step="10" />
+            <input type="color" bind:value={editColor} title="Colore" class="edit-color" />
+            <button class="btn-icon" onclick={() => saveEdit(goal.id)} title="Salva"><Check size={13} /></button>
+            <button class="btn-icon" onclick={() => editingId = null} title="Annulla"><X size={13} /></button>
+          {:else}
+            <span class="goal-name">{goal.name}</span>
+            <div class="goal-actions">
+              <button class="btn-del" onclick={() => startEdit(goal)} title="Modifica"><Pencil size={13} /></button>
+              <button class="btn-del" onclick={() => rimuovi(goal.id)} title="Elimina"><Trash2 size={13} /></button>
+            </div>
+          {/if}
         </div>
         <div class="amounts">
           <span class="saved">{fmt(goal.saved)}</span>
@@ -154,7 +183,13 @@
 
   .goals-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
   .goal-card { background: var(--bg-card); border-radius: 14px; padding: 1.25rem; border: 1px solid var(--border); border-top: 3px solid var(--c, #6366f1); box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
-  .goal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
+  .goal-header { display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+  .goal-actions { display: flex; gap: 0.2rem; }
+  .btn-icon { background: none; border: none; color: var(--text-dim); cursor: pointer; padding: 0.2rem; opacity: 0.7; }
+  .btn-icon:hover { opacity: 1; color: var(--accent); }
+  .edit-name { flex: 1; min-width: 80px; padding: 0.2rem 0.4rem; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-base); color: var(--text); font-size: 0.9rem; }
+  .edit-target { width: 70px; padding: 0.2rem 0.4rem; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-base); color: var(--text); font-size: 0.9rem; }
+  .edit-color { width: 28px; height: 28px; padding: 0.1rem; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; background: var(--bg-base); }
   .goal-name { font-weight: 600; font-size: 1rem; }
   .amounts { display: flex; align-items: baseline; gap: 0.25rem; margin-bottom: 0.5rem; }
   .saved { font-size: 1.4rem; font-weight: 700; color: var(--c, #6366f1); }

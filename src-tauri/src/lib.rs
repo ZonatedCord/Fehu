@@ -123,6 +123,7 @@ pub fn run() {
             commands::vision::read_image_base64,
             commands::goals::list_goals,
             commands::goals::create_goal,
+            commands::goals::update_goal,
             commands::goals::update_goal_saved,
             commands::goals::delete_goal,
             commands::goals::contribute_to_goal,

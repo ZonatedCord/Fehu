@@ -28,6 +28,8 @@ export const api = {
   listGoals: () => invoke<Goal[]>('list_goals'),
   createGoal: (name: string, target: number, color: string) =>
     invoke<Goal>('create_goal', { name, target, color }),
+  updateGoal: (id: number, name: string, target: number, color: string) =>
+    invoke<void>('update_goal', { id, name, target, color }),
   updateGoalSaved: (id: number, saved: number) =>
     invoke<void>('update_goal_saved', { id, saved }),
   deleteGoal: (id: number) => invoke<void>('delete_goal', { id }),
