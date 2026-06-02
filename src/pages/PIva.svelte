@@ -1,5 +1,4 @@
 <script lang="ts">
-  // ── Types ────────────────────────────────────────────────────────────────
   type Regime = 'forfettario' | 'ordinario' | 'semplificato';
   type InpsType = 'gestione_separata' | 'artigiani' | 'commercianti';
 
@@ -8,120 +7,158 @@
     fatturato: number;
     baseImponibile: number;
     contributiInps: number;
+    detrazione: number;
     imposta: number;
     netto: number;
   }
 
-  // ── ATECO coefficients ───────────────────────────────────────────────────
+  interface RataInps {
+    label: string;
+    scadenza: string;
+    importo: number;
+  }
+
+  // ATECO coefficients 2024
   const atecoOptions = [
-    { label: 'Professioni (art. 54 TUIR) — avvocati, architetti, consulenti', coeff: 0.78 },
-    { label: 'Servizi non professionali', coeff: 0.67 },
+    { label: 'Professioni sanitarie, insegnamento, assistenza sociale', coeff: 0.78 },
+    { label: 'Attività professionali (avvocati, architetti, consulenti art. 54)', coeff: 0.78 },
+    { label: 'Costruzioni e attività immobiliari', coeff: 0.86 },
     { label: 'Intermediari del commercio', coeff: 0.62 },
-    { label: 'Industria, artigianato e altri servizi', coeff: 0.40 },
-    { label: 'Commercio (es. rivendita)', coeff: 0.40 },
-    { label: 'Ristorazione e ospitalità', coeff: 0.40 },
-    { label: 'Costruzioni e immobiliare', coeff: 0.86 },
+    { label: 'Servizi non professionali, attività sportive', coeff: 0.67 },
+    { label: 'Industria, artigianato, altri servizi', coeff: 0.40 },
+    { label: 'Commercio al dettaglio / ambulante / ristorazione', coeff: 0.40 },
   ];
+
+  // INPS 2024 rates
+  const INPS_RATES = {
+    gestione_separata: { aliquota: 0.2623, minimale: 0, massimale: 119650 },
+    artigiani:         { aliquota: 0.24036, minimale: 4208, massimale: 55448 },
+    commercianti:      { aliquota: 0.2448,  minimale: 4292, massimale: 55448 },
+  };
 
   const inpsOptions: { label: string; value: InpsType }[] = [
-    { label: 'Gestione Separata INPS (26.07%)', value: 'gestione_separata' },
-    { label: 'Artigiani IVS (24% + minimale ~3.900€)', value: 'artigiani' },
-    { label: 'Commercianti IVS (24.09% + minimale ~4.000€)', value: 'commercianti' },
+    { label: 'Gestione Separata INPS — 26.23%', value: 'gestione_separata' },
+    { label: 'Artigiani IVS — 24.04% (min. €4.208)', value: 'artigiani' },
+    { label: 'Commercianti IVS — 24.48% (min. €4.292)', value: 'commercianti' },
   ];
 
-  // ── State ────────────────────────────────────────────────────────────────
+  // State
   let activeTab = $state<Regime>('forfettario');
-
-  // Forfettario
   let fatturato = $state(30000);
-  let atecoIdx = $state(0);
+  let atecoIdx = $state(1);
   let anniAttivita = $state(6);
   let inpsType = $state<InpsType>('gestione_separata');
-
-  // Ordinario / Semplificato
   let fatturatoOrd = $state(40000);
   let speseOrd = $state(10000);
   let inpsTypeOrd = $state<InpsType>('gestione_separata');
   let addRegionale = $state(1.5);
 
-  // ── Helpers ──────────────────────────────────────────────────────────────
+  // Calcoli
   function calcInps(base: number, type: InpsType): number {
-    if (type === 'gestione_separata') return base * 0.2607;
-    if (type === 'artigiani') return Math.max(base * 0.24, 3900);
-    return Math.max(base * 0.2409, 4000); // commercianti
+    const r = INPS_RATES[type];
+    if (type === 'gestione_separata') {
+      return Math.min(base, r.massimale) * r.aliquota;
+    }
+    const variabile = Math.max(base - 17504, 0); // contributi sul reddito eccedente il minimale
+    return r.minimale + Math.min(variabile, r.massimale - 17504) * r.aliquota;
   }
 
   function calcIrpef(reddito: number): number {
     if (reddito <= 0) return 0;
     let tax = 0;
-    const r = reddito;
-    if (r <= 28000) return r * 0.23;
+    if (reddito <= 28000) return reddito * 0.23;
     tax += 28000 * 0.23;
-    if (r <= 50000) return tax + (r - 28000) * 0.35;
+    if (reddito <= 50000) return tax + (reddito - 28000) * 0.35;
     tax += 22000 * 0.35;
-    return tax + (r - 50000) * 0.43;
+    return tax + (reddito - 50000) * 0.43;
   }
 
-  function calcForfettario(fat: number): { base: number; inps: number; imposta: number; netto: number } {
+  function calcDetrazioneAuto(reddito: number): number {
+    if (reddito <= 0) return 0;
+    if (reddito <= 5500) return 1265;
+    if (reddito <= 28000) return 1265 * (28000 - reddito) / 22500;
+    return 0;
+  }
+
+  function calcForfettario(fat: number) {
     const coeff = atecoOptions[atecoIdx].coeff;
-    const aliquotaImposta = anniAttivita <= 5 ? 0.05 : 0.15;
+    const aliq = anniAttivita <= 5 ? 0.05 : 0.15;
     const base = fat * coeff;
     const inps = calcInps(base, inpsType);
-    const baseDeducibile = Math.max(base - inps, 0);
-    const imposta = baseDeducibile * aliquotaImposta;
-    const netto = fat - inps - imposta;
-    return { base, inps, imposta, netto };
+    const imponibile = Math.max(base - inps, 0);
+    const imposta = imponibile * aliq;
+    return { base, inps, detrazione: 0, imposta, netto: fat - inps - imposta };
   }
 
-  function calcOrdinario(fat: number, spese: number, type: InpsType, addReg: number): {
-    base: number; inps: number; imposta: number; netto: number;
-  } {
-    const reddito = fat - spese;
-    const inps = calcInps(Math.max(reddito, 0), type);
+  function calcOrdinario(fat: number, spese: number, type: InpsType, addReg: number) {
+    const reddito = Math.max(fat - spese, 0);
+    const inps = calcInps(reddito, type);
     const baseIrpef = Math.max(reddito - inps, 0);
-    const irpef = calcIrpef(baseIrpef);
+    const detr = calcDetrazioneAuto(baseIrpef);
+    const irpef = Math.max(calcIrpef(baseIrpef) - detr, 0);
     const addizionale = baseIrpef * (addReg / 100);
     const imposta = irpef + addizionale;
-    const netto = fat - spese - inps - imposta;
-    return { base: baseIrpef, inps, imposta, netto };
+    return { base: baseIrpef, inps, detrazione: detr, imposta, netto: fat - spese - inps - imposta };
   }
 
-  // ── Computed scenarios ───────────────────────────────────────────────────
-  let scenarios = $derived.by(() => {
-    const multipliers = [
-      { label: 'Pessimista  −20%', factor: 0.8 },
-      { label: 'Base', factor: 1.0 },
-      { label: 'Ottimista  +20%', factor: 1.2 },
+  function calcRateInps(inps: number, type: InpsType, fat: number): RataInps[] {
+    if (type === 'gestione_separata') {
+      const acc1 = inps * 0.4;
+      const acc2 = inps * 0.6;
+      return [
+        { label: '1° Acconto (40%)', scadenza: '30 giugno', importo: acc1 },
+        { label: '2° Acconto (60%)', scadenza: '30 novembre', importo: acc2 },
+      ];
+    }
+    // Artigiani / Commercianti: quota fissa in 4 rate + quota variabile in 2 rate
+    const r = INPS_RATES[type];
+    const fissa = r.minimale;
+    const variabile = Math.max(inps - fissa, 0);
+    const rata = fissa / 4;
+    return [
+      { label: 'Quota fissa 1/4', scadenza: '16 maggio', importo: rata },
+      { label: 'Quota fissa 2/4', scadenza: '20 agosto', importo: rata },
+      { label: 'Quota fissa 3/4 + acc. variabile', scadenza: '16 novembre', importo: rata + variabile * 0.4 },
+      { label: 'Quota fissa 4/4 + saldo variabile', scadenza: '16 febbraio', importo: rata + variabile * 0.6 },
     ];
+  }
 
-    return multipliers.map(({ label, factor }) => {
+  let scenarios = $derived.by(() => {
+    return [
+      { label: 'Pessimista −20%', factor: 0.8 },
+      { label: 'Base',            factor: 1.0 },
+      { label: 'Ottimista +20%',  factor: 1.2 },
+    ].map(({ label, factor }) => {
       if (activeTab === 'forfettario') {
         const fat = fatturato * factor;
-        const { base, inps, imposta, netto } = calcForfettario(fat);
-        return { label, fatturato: fat, baseImponibile: base, contributiInps: inps, imposta, netto };
+        const { base, inps, detrazione, imposta, netto } = calcForfettario(fat);
+        return { label, fatturato: fat, baseImponibile: base, contributiInps: inps, detrazione, imposta, netto } as Scenario;
       } else {
         const fat = fatturatoOrd * factor;
         const spese = speseOrd * factor;
-        const { base, inps, imposta, netto } = calcOrdinario(fat, spese, inpsTypeOrd, addRegionale);
-        return { label, fatturato: fat, baseImponibile: base, contributiInps: inps, imposta, netto };
+        const { base, inps, detrazione, imposta, netto } = calcOrdinario(fat, spese, activeTab === 'ordinario' ? inpsTypeOrd : inpsTypeOrd, addRegionale);
+        return { label, fatturato: fat, baseImponibile: base, contributiInps: inps, detrazione, imposta, netto } as Scenario;
       }
-    }) as Scenario[];
+    });
+  });
+
+  let rateInps = $derived.by(() => {
+    const base = activeTab === 'forfettario' ? scenarios[1] : scenarios[1];
+    const type = activeTab === 'forfettario' ? inpsType : inpsTypeOrd;
+    return calcRateInps(base.contributiInps, type, base.fatturato);
   });
 
   function fmt(n: number): string {
-    return new Intl.NumberFormat('it-IT', {
-      style: 'currency', currency: 'EUR', maximumFractionDigits: 0,
-    }).format(n);
+    return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
   }
 </script>
 
 <div class="page">
   <div class="page-header">
     <h1>Calcolatore P.IVA</h1>
-    <p class="subtitle">Stima del carico fiscale per regime forfettario, ordinario e semplificato.</p>
+    <p class="subtitle">Stima del carico fiscale per regime forfettario, ordinario e semplificato. Aliquote 2024.</p>
   </div>
 
-  <!-- Tab selector -->
   <div class="tabs">
     {#each (['forfettario', 'ordinario', 'semplificato'] as Regime[]) as tab}
       <button class:active={activeTab === tab} onclick={() => { activeTab = tab; }}>
@@ -130,12 +167,13 @@
     {/each}
   </div>
 
-  <div class="content">
-    <!-- ── FORFETTARIO ─────────────────────────────────────────────── -->
-    {#if activeTab === 'forfettario'}
-      <div class="inputs">
+  <div class="layout">
+    <!-- Inputs -->
+    <div class="inputs-card">
+
+      {#if activeTab === 'forfettario'}
         <label>
-          <span>Fatturato annuo previsto</span>
+          <span>Fatturato annuo</span>
           <div class="input-row">
             <input type="number" bind:value={fatturato} min="0" step="1000" />
             <span class="unit">€</span>
@@ -146,7 +184,7 @@
           <span>Categoria ATECO</span>
           <select bind:value={atecoIdx}>
             {#each atecoOptions as opt, i}
-              <option value={i}>{opt.label} — coeff. {(opt.coeff * 100).toFixed(0)}%</option>
+              <option value={i}>{opt.label} ({(opt.coeff * 100).toFixed(0)}%)</option>
             {/each}
           </select>
         </label>
@@ -154,41 +192,38 @@
         <label>
           <span>Anni di attività</span>
           <div class="input-row">
-            <input type="number" bind:value={anniAttivita} min="1" max="50" />
-            <span class="unit-hint">{anniAttivita <= 5 ? 'Aliquota agevolata 5%' : 'Aliquota ordinaria 15%'}</span>
+            <input type="number" bind:value={anniAttivita} min="1" max="50" style="width:80px" />
+            <span class="unit-badge" class:agev={anniAttivita <= 5}>
+              {anniAttivita <= 5 ? 'Aliquota 5% (start-up)' : 'Aliquota 15%'}
+            </span>
           </div>
         </label>
 
         <label>
           <span>Tipo INPS</span>
           <select bind:value={inpsType}>
-            {#each inpsOptions as opt}
-              <option value={opt.value}>{opt.label}</option>
-            {/each}
+            {#each inpsOptions as opt}<option value={opt.value}>{opt.label}</option>{/each}
           </select>
         </label>
 
-        <div class="formula-box">
-          <p class="formula-title">Formula applicata</p>
-          <p class="formula">
-            Base imponibile = fatturato × {(atecoOptions[atecoIdx].coeff * 100).toFixed(0)}%<br>
-            INPS deduc. dalla base → imposta {anniAttivita <= 5 ? '5%' : '15%'} sulla base ridotta
+        <div class="info-box">
+          <p class="info-title">Formula forfettario</p>
+          <p class="info-body">
+            Base = fatturato × {(atecoOptions[atecoIdx].coeff * 100).toFixed(0)}%<br>
+            INPS deducibile dalla base → imposta sostitutiva {anniAttivita <= 5 ? '5%' : '15%'}
           </p>
         </div>
-      </div>
 
-    <!-- ── ORDINARIO / SEMPLIFICATO ──────────────────────────────── -->
-    {:else}
-      <div class="inputs">
+      {:else}
         {#if activeTab === 'semplificato'}
           <div class="regime-note">
-            Regime semplificato — stessa tassazione IRPEF del regime ordinario.
-            Limite ricavi: 400.000€ (servizi) / 700.000€ (altri).
+            Regime semplificato: stessa IRPEF del regime ordinario.<br>
+            Limite ricavi: 400.000€ (prestazioni di servizi) / 700.000€ (altre attività).
           </div>
         {/if}
 
         <label>
-          <span>Fatturato annuo previsto</span>
+          <span>Fatturato annuo</span>
           <div class="input-row">
             <input type="number" bind:value={fatturatoOrd} min="0" step="1000" />
             <span class="unit">€</span>
@@ -206,152 +241,172 @@
         <label>
           <span>Tipo INPS</span>
           <select bind:value={inpsTypeOrd}>
-            {#each inpsOptions as opt}
-              <option value={opt.value}>{opt.label}</option>
-            {/each}
+            {#each inpsOptions as opt}<option value={opt.value}>{opt.label}</option>{/each}
           </select>
         </label>
 
         <label>
           <span>Addizionale regionale (%)</span>
           <div class="input-row">
-            <input type="number" bind:value={addRegionale} min="0" max="4" step="0.1" style="max-width: 100px;" />
-            <span class="unit-hint">Media nazionale ~1.5%</span>
+            <input type="number" bind:value={addRegionale} min="0" max="4" step="0.1" style="width:80px" />
+            <span class="unit-badge">Media naz. ~1.5%</span>
           </div>
         </label>
 
-        <div class="formula-box">
-          <p class="formula-title">Scaglioni IRPEF 2024</p>
-          <p class="formula">
-            0 – 28.000€ → 23% &nbsp;|&nbsp; 28.001 – 50.000€ → 35% &nbsp;|&nbsp; &gt;50.000€ → 43%<br>
-            + Addizionale regionale {addRegionale}% + Addizionale comunale (non inclusa)
+        <div class="info-box">
+          <p class="info-title">Scaglioni IRPEF 2024 + detrazioni</p>
+          <p class="info-body">
+            0–28.000€ → 23% &nbsp;|&nbsp; 28.001–50.000€ → 35% &nbsp;|&nbsp; &gt;50.000€ → 43%<br>
+            + Addizionale regionale {addRegionale}%<br>
+            Detrazione lavoro autonomo: fino a €1.265 (reddito ≤ €28.000)
           </p>
         </div>
-      </div>
-    {/if}
-
-    <!-- ── SCENARI ─────────────────────────────────────────────────── -->
-    <div class="scenarios">
-      {#each scenarios as sc, i}
-        <div class="scenario-card" class:base={i === 1}>
-          <div class="scenario-label">{sc.label}</div>
-          <div class="scenario-fatturato">{fmt(sc.fatturato)}</div>
-
-          <div class="scenario-rows">
-            <div class="sc-row">
-              <span>Base imponibile</span>
-              <span>{fmt(sc.baseImponibile)}</span>
-            </div>
-            <div class="sc-row">
-              <span>Contributi INPS</span>
-              <span class="negative">{fmt(sc.contributiInps)}</span>
-            </div>
-            <div class="sc-row">
-              <span>Imposta</span>
-              <span class="negative">{fmt(sc.imposta)}</span>
-            </div>
-            <div class="sc-row netto">
-              <span>Netto stimato</span>
-              <span class:positive={sc.netto > 0} class:negative-val={sc.netto < 0}>
-                {fmt(sc.netto)}
-              </span>
-            </div>
-          </div>
-        </div>
-      {/each}
+      {/if}
     </div>
 
-    <p class="disclaimer">
-      Stime indicative basate su aliquote 2024. Non includono addizionale comunale,
-      detrazioni d'imposta, contribuenti minimi, o casistiche particolari.
-      Consulta un commercialista per una pianificazione fiscale accurata.
-    </p>
+    <!-- Scenari -->
+    <div class="right-col">
+      <div class="scenarios">
+        {#each scenarios as sc, i}
+          <div class="scenario-card" class:base={i === 1}>
+            <div class="sc-label">{sc.label}</div>
+            <div class="sc-fatturato">{fmt(sc.fatturato)}</div>
+            <div class="sc-rows">
+              <div class="sc-row"><span>Base imponibile</span><span>{fmt(sc.baseImponibile)}</span></div>
+              <div class="sc-row"><span>Contributi INPS</span><span class="neg">{fmt(sc.contributiInps)}</span></div>
+              {#if sc.detrazione > 0}
+                <div class="sc-row"><span>Detrazione lav. aut.</span><span class="pos">−{fmt(sc.detrazione)}</span></div>
+              {/if}
+              <div class="sc-row"><span>Imposta</span><span class="neg">{fmt(sc.imposta)}</span></div>
+              <div class="sc-row netto">
+                <span>Netto stimato</span>
+                <span class:pos={sc.netto > 0} class:neg={sc.netto < 0}>{fmt(sc.netto)}</span>
+              </div>
+            </div>
+          </div>
+        {/each}
+      </div>
+
+      <!-- Rate INPS -->
+      <div class="rate-card">
+        <div class="rate-title">Rate INPS — scenario base</div>
+        <div class="rate-rows">
+          {#each rateInps as rata}
+            <div class="rate-row">
+              <div class="rate-label">{rata.label}</div>
+              <div class="rate-scad">{rata.scadenza}</div>
+              <div class="rate-importo">{fmt(rata.importo)}</div>
+            </div>
+          {/each}
+          <div class="rate-row total">
+            <div class="rate-label">Totale annuo</div>
+            <div class="rate-scad"></div>
+            <div class="rate-importo">{fmt(scenarios[1].contributiInps)}</div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
+
+  <p class="disclaimer">
+    Stime indicative — aliquote INPS e IRPEF 2024. Non includono addizionale comunale, casse professionali,
+    detrazioni familiari, o situazioni particolari. Consulta un commercialista per pianificazione accurata.
+  </p>
 </div>
 
 <style>
-  .page { max-width: 900px; }
-  .page-header { margin-bottom: 1.5rem; }
+  .page { max-width: 960px; }
+  .page-header { margin-bottom: 1.25rem; }
   h1 { margin: 0 0 0.3rem; font-size: 1.5rem; }
   .subtitle { color: var(--text-dim); font-size: 0.875rem; margin: 0; }
 
-  /* Tabs */
   .tabs {
-    display: flex; gap: 0; margin-bottom: 1.75rem;
-    background: var(--bg-card); border-radius: 8px; padding: 0.25rem;
-    width: fit-content;
+    display: flex; gap: 0; margin-bottom: 1.5rem;
+    background: var(--bg-card); border-radius: 10px; padding: 0.25rem; width: fit-content;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
   }
   .tabs button {
     background: none; border: none; color: var(--text-dim);
-    padding: 0.5rem 1.1rem; cursor: pointer; border-radius: 6px;
+    padding: 0.5rem 1.1rem; cursor: pointer; border-radius: 8px;
     font-size: 0.875rem; transition: background 0.15s, color 0.15s;
   }
-  .tabs button.active { background: #2e2e4e; color: #a5b4fc; }
-
-  .content { display: grid; grid-template-columns: 320px 1fr; gap: 1.5rem; align-items: start; }
-
-  /* Inputs */
-  .inputs {
-    background: var(--bg-card); border-radius: 10px; padding: 1.25rem;
-    display: flex; flex-direction: column; gap: 1rem;
+  .tabs button.active {
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    color: var(--accent-lt); font-weight: 600;
   }
-  label { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.85rem; color: #aaa; }
-  label span { color: var(--text-muted); }
+
+  .layout { display: grid; grid-template-columns: 310px 1fr; gap: 1.25rem; align-items: start; }
+
+  .inputs-card {
+    background: var(--bg-card); border-radius: 14px; padding: 1.25rem 1.5rem;
+    display: flex; flex-direction: column; gap: 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  label { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.85rem; color: var(--text-muted); }
   .input-row { display: flex; align-items: center; gap: 0.5rem; }
   .unit { color: var(--text-dim); font-size: 0.85rem; }
-  .unit-hint { color: #4ade80; font-size: 0.78rem; white-space: nowrap; }
-
+  .unit-badge {
+    font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 5px;
+    background: var(--bg-elevated); color: var(--text-muted); white-space: nowrap;
+  }
+  .unit-badge.agev { background: color-mix(in srgb, var(--income) 12%, transparent); color: var(--income); }
   input[type="number"], select {
     padding: 0.5rem 0.75rem; border: 1px solid var(--border);
-    border-radius: 6px; background: var(--bg-base); color: var(--text);
-    font-size: 0.9rem; width: 100%;
+    border-radius: 10px; background: var(--bg-base); color: var(--text); font-size: 0.9rem; width: 100%;
   }
-  input[type="number"] { width: 140px; }
-  input:focus, select:focus { outline: 1px solid #6366f1; }
-
-  .formula-box {
-    background: var(--bg-base); border: 1px solid var(--border2);
-    border-radius: 6px; padding: 0.75rem; margin-top: 0.25rem;
+  input[type="number"] { width: 130px; }
+  input:focus, select:focus { outline: 1px solid var(--accent); }
+  .info-box {
+    background: var(--bg-elevated); border: 1px solid var(--border2);
+    border-radius: 8px; padding: 0.75rem;
   }
-  .formula-title { font-size: 0.72rem; color: var(--text-dim); margin: 0 0 0.35rem; text-transform: uppercase; letter-spacing: 0.06em; }
-  .formula { font-size: 0.78rem; color: var(--text-dim); margin: 0; line-height: 1.6; }
-
+  .info-title { font-size: 0.7rem; color: var(--text-dim); margin: 0 0 0.3rem; text-transform: uppercase; letter-spacing: 0.06em; }
+  .info-body { font-size: 0.78rem; color: var(--text-muted); margin: 0; line-height: 1.65; }
   .regime-note {
-    background: #12122a; border: 1px solid var(--border); border-radius: 6px;
-    padding: 0.65rem 0.85rem; font-size: 0.8rem; color: var(--text-dim); line-height: 1.5;
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+    border-radius: 8px; padding: 0.65rem 0.85rem;
+    font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;
   }
 
-  /* Scenarios */
-  .scenarios {
-    display: flex; flex-direction: column; gap: 0.75rem;
-    align-self: start;
-  }
+  /* Right column */
+  .right-col { display: flex; flex-direction: column; gap: 1rem; }
+  .scenarios { display: flex; flex-direction: column; gap: 0.75rem; }
   .scenario-card {
     background: var(--bg-card); border: 1px solid var(--border);
-    border-radius: 10px; padding: 1.1rem;
+    border-radius: 12px; padding: 1rem 1.1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
   }
-  .scenario-card.base { border-color: #4e4e8e; }
+  .scenario-card.base { border-color: var(--accent); }
+  .sc-label { font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.2rem; }
+  .sc-fatturato { font-size: 1.3rem; font-weight: 700; color: var(--text); margin-bottom: 0.75rem; }
+  .sc-rows { display: flex; flex-direction: column; gap: 0.4rem; }
+  .sc-row { display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted); }
+  .sc-row.netto { border-top: 1px solid var(--border2); padding-top: 0.4rem; margin-top: 0.1rem; font-weight: 600; color: var(--text); }
+  .neg { color: var(--expense); }
+  .pos { color: var(--income); }
 
-  .scenario-label { font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.3rem; }
-  .scenario-fatturato { font-size: 1.35rem; font-weight: 700; color: var(--text); margin-bottom: 0.85rem; }
-
-  .scenario-rows { display: flex; flex-direction: column; gap: 0.45rem; }
-  .sc-row {
-    display: flex; justify-content: space-between;
-    font-size: 0.85rem; color: var(--text-muted);
+  /* Rate INPS */
+  .rate-card {
+    background: var(--bg-card); border-radius: 12px; padding: 1rem 1.1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04); border: 1px solid var(--border);
   }
-  .sc-row.netto { border-top: 1px solid #2e2e4e; padding-top: 0.45rem; margin-top: 0.1rem; color: #ccc; font-weight: 600; }
-  .negative { color: #f87171; }
-  .positive { color: #4ade80; }
-  .negative-val { color: #f87171; }
+  .rate-title { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); margin-bottom: 0.75rem; font-weight: 600; }
+  .rate-rows { display: flex; flex-direction: column; gap: 0; }
+  .rate-row { display: grid; grid-template-columns: 1fr auto auto; gap: 0.75rem; padding: 0.45rem 0; border-bottom: 1px solid var(--border2); font-size: 0.82rem; align-items: baseline; }
+  .rate-row:last-child { border-bottom: none; }
+  .rate-row.total { font-weight: 700; color: var(--text); padding-top: 0.6rem; border-top: 1px solid var(--border); border-bottom: none; }
+  .rate-label { color: var(--text-muted); }
+  .rate-scad { color: var(--text-dim); font-size: 0.75rem; white-space: nowrap; }
+  .rate-importo { text-align: right; color: var(--expense); white-space: nowrap; }
+  .rate-row.total .rate-importo { color: var(--text); }
 
   .disclaimer {
-    grid-column: 1 / -1; font-size: 0.75rem; color: #444;
-    margin: 0; line-height: 1.6; border-top: 1px solid #1e1e2e; padding-top: 1rem;
+    font-size: 0.75rem; color: var(--text-dim); margin: 1rem 0 0;
+    line-height: 1.6; border-top: 1px solid var(--border2); padding-top: 1rem;
   }
 
   @media (max-width: 700px) {
-    .content { grid-template-columns: 1fr; }
-    .scenarios { flex-direction: column; }
+    .layout { grid-template-columns: 1fr; }
   }
 </style>
