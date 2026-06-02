@@ -2,11 +2,11 @@
   import { onMount } from 'svelte';
   import { Chart, registerables } from 'chart.js';
   import { SankeyController, Flow } from 'chartjs-chart-sankey';
-  import type { DashboardStats } from '../lib/types';
+  import type { DashboardStats, Goal } from '../lib/types';
 
   Chart.register(...registerables, SankeyController, Flow);
 
-  let { stats }: { stats: DashboardStats } = $props();
+  let { stats, goals = [] }: { stats: DashboardStats; goals?: Goal[] } = $props();
 
   let canvas = $state<HTMLCanvasElement | null>(null);
   let chart: Chart | null = null;
@@ -26,7 +26,16 @@
       }
     }
 
-    const savings = stats.total_income - stats.total_expense;
+    for (const g of goals) {
+      if (g.saved > 0.01) {
+        const label = `Fondo: ${g.name}`;
+        flows.push({ from: source, to: label, flow: Math.round(g.saved * 100) / 100 });
+        colors[label] = g.color ?? '#a5b4fc';
+      }
+    }
+
+    const goalsSaved = goals.reduce((s, g) => s + g.saved, 0);
+    const savings = stats.total_income - stats.total_expense - goalsSaved;
     if (savings > 0.01) {
       flows.push({ from: source, to: 'Risparmio', flow: Math.round(savings * 100) / 100 });
       colors['Risparmio'] = '#a5b4fc';
@@ -36,7 +45,7 @@
   }
 
   function render() {
-    if (!canvas || stats.by_category.length === 0) return;
+    if (!canvas || (stats.by_category.length === 0 && goals.length === 0)) return;
     if (chart) { chart.destroy(); chart = null; }
 
     const { flows, colors } = buildData();
@@ -77,12 +86,12 @@
   });
 
   $effect(() => {
-    stats;
+    stats; goals;
     render();
   });
 </script>
 
-{#if stats.by_category.length === 0}
+{#if stats.by_category.length === 0 && goals.length === 0}
   <p class="muted">Aggiungi uscite per categoria per vedere il flusso</p>
 {:else}
   <canvas bind:this={canvas}></canvas>
