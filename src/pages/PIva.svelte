@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+
   type Regime = 'forfettario' | 'ordinario' | 'semplificato';
   type InpsType = 'gestione_separata' | 'artigiani' | 'commercianti';
 
@@ -18,8 +20,12 @@
     importo: number;
   }
 
-  // ATECO coefficients 2024
-  const atecoOptions = [
+  const RATES_URL = 'https://raw.githubusercontent.com/ZonatedCord/Fehu/main/docs/piva-rates.json';
+  const CACHE_KEY = 'fehu_piva_rates';
+  const CACHE_TTL = 24 * 60 * 60 * 1000; // 24h
+
+  // Defaults (fallback se offline)
+  let atecoOptions = $state([
     { label: 'Professioni sanitarie, insegnamento, assistenza sociale', coeff: 0.78 },
     { label: 'Attività professionali (avvocati, architetti, consulenti art. 54)', coeff: 0.78 },
     { label: 'Costruzioni e attività immobiliari', coeff: 0.86 },
@@ -27,19 +33,50 @@
     { label: 'Servizi non professionali, attività sportive', coeff: 0.67 },
     { label: 'Industria, artigianato, altri servizi', coeff: 0.40 },
     { label: 'Commercio al dettaglio / ambulante / ristorazione', coeff: 0.40 },
-  ];
+  ]);
 
-  // INPS 2024 rates
-  const INPS_RATES = {
-    gestione_separata: { aliquota: 0.2623, minimale: 0, massimale: 119650 },
-    artigiani:         { aliquota: 0.24036, minimale: 4208, massimale: 55448 },
-    commercianti:      { aliquota: 0.2448,  minimale: 4292, massimale: 55448 },
-  };
+  let INPS_RATES = $state({
+    gestione_separata: { aliquota: 0.2623, minimale: 0, massimale: 119650, reddito_minimale: 0 },
+    artigiani:         { aliquota: 0.24036, minimale: 4208, massimale: 55448, reddito_minimale: 17504 },
+    commercianti:      { aliquota: 0.2448,  minimale: 4292, massimale: 55448, reddito_minimale: 17504 },
+  });
+
+  let ratesAnno = $state(2024);
+  let ratesLoading = $state(false);
+
+  onMount(async () => {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const { data, ts } = JSON.parse(cached);
+        if (Date.now() - ts < CACHE_TTL) { applyRates(data); return; }
+      }
+      ratesLoading = true;
+      const res = await fetch(RATES_URL, { signal: AbortSignal.timeout(5000) });
+      if (res.ok) {
+        const data = await res.json();
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() }));
+        applyRates(data);
+      }
+    } catch {} finally { ratesLoading = false; }
+  });
+
+  function applyRates(data: any) {
+    if (data.ateco) atecoOptions = data.ateco;
+    if (data.inps) {
+      INPS_RATES = {
+        gestione_separata: { ...INPS_RATES.gestione_separata, ...data.inps.gestione_separata },
+        artigiani:         { ...INPS_RATES.artigiani, ...data.inps.artigiani },
+        commercianti:      { ...INPS_RATES.commercianti, ...data.inps.commercianti },
+      };
+    }
+    if (data._anno) ratesAnno = data._anno;
+  }
 
   const inpsOptions: { label: string; value: InpsType }[] = [
-    { label: 'Gestione Separata INPS — 26.23%', value: 'gestione_separata' },
-    { label: 'Artigiani IVS — 24.04% (min. €4.208)', value: 'artigiani' },
-    { label: 'Commercianti IVS — 24.48% (min. €4.292)', value: 'commercianti' },
+    { label: 'Gestione Separata INPS', value: 'gestione_separata' },
+    { label: 'Artigiani IVS', value: 'artigiani' },
+    { label: 'Commercianti IVS', value: 'commercianti' },
   ];
 
   // State
@@ -155,8 +192,13 @@
 
 <div class="page">
   <div class="page-header">
-    <h1>Calcolatore P.IVA</h1>
-    <p class="subtitle">Stima del carico fiscale per regime forfettario, ordinario e semplificato. Aliquote 2024.</p>
+    <div class="header-row">
+      <h1>Calcolatore P.IVA</h1>
+      <span class="anno-badge" class:loading={ratesLoading}>
+        {ratesLoading ? 'Aggiornamento…' : `Aliquote ${ratesAnno}`}
+      </span>
+    </div>
+    <p class="subtitle">Stima del carico fiscale per regime forfettario, ordinario e semplificato.</p>
   </div>
 
   <div class="tabs">
@@ -317,7 +359,10 @@
 <style>
   .page { max-width: 960px; }
   .page-header { margin-bottom: 1.25rem; }
-  h1 { margin: 0 0 0.3rem; font-size: 1.5rem; }
+  .header-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.3rem; }
+  h1 { margin: 0; font-size: 1.5rem; }
+  .anno-badge { font-size: 0.75rem; background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent-lt); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); padding: 0.15rem 0.6rem; border-radius: 6px; font-weight: 600; }
+  .anno-badge.loading { color: var(--text-dim); background: var(--bg-elevated); border-color: var(--border); }
   .subtitle { color: var(--text-dim); font-size: 0.875rem; margin: 0; }
 
   .tabs {

@@ -22,7 +22,7 @@ pub fn run() {
         .setup(|app| {
             // Native menu bar
             let fehu_menu = Submenu::with_items(app, "Fehu", true, &[
-                &PredefinedMenuItem::about(app, Some("Info su Fehu"), None)?,
+                &MenuItem::with_id(app, "nav-about", "Info su Fehu", true, None::<&str>)?,
                 &PredefinedMenuItem::separator(app)?,
                 &MenuItem::with_id(app, "check-update", "Controlla aggiornamenti…", true, None::<&str>)?,
                 &PredefinedMenuItem::separator(app)?,

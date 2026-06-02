@@ -67,7 +67,7 @@
         'nav-dashboard': 'dashboard', 'nav-transactions': 'transactions',
         'nav-categories': 'categories', 'nav-foto': 'foto',
         'nav-obiettivi': 'obiettivi', 'nav-ricorrenti': 'ricorrenti',
-        'nav-piva': 'piva', 'nav-settings': 'settings', 'nav-export': 'export', 'nav-guida': 'guida',
+        'nav-piva': 'piva', 'nav-settings': 'settings', 'nav-export': 'export', 'nav-guida': 'guida', 'nav-about': 'about',
       };
       if (navMap[id]) currentPage.set(navMap[id] as any);
       if (id === 'new-transaction') {

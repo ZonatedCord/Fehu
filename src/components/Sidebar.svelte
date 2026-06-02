@@ -26,9 +26,9 @@
   ];
 
   const utilityNav: { label: string; page: Page; icon: typeof LayoutDashboard }[] = [
+    { label: 'About',        page: 'about',    icon: Info },
     { label: 'Guida',        page: 'guida',    icon: BookOpen },
     { label: 'Impostazioni', page: 'settings', icon: Settings },
-    { label: 'About',        page: 'about',    icon: Info },
   ];
 </script>
 

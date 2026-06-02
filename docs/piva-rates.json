@@ -1,0 +1,28 @@
+{
+  "_comment": "Aliquote fiscali italiane — aggiornare ogni anno. Fetch da PIva.svelte.",
+  "_anno": 2024,
+  "inps": {
+    "gestione_separata": { "aliquota": 0.2623, "minimale": 0, "massimale": 119650 },
+    "artigiani":         { "aliquota": 0.24036, "minimale": 4208, "massimale": 55448, "reddito_minimale": 17504 },
+    "commercianti":      { "aliquota": 0.2448,  "minimale": 4292, "massimale": 55448, "reddito_minimale": 17504 }
+  },
+  "irpef": [
+    { "fino_a": 28000, "aliquota": 0.23 },
+    { "fino_a": 50000, "aliquota": 0.35 },
+    { "fino_a": null,  "aliquota": 0.43 }
+  ],
+  "detrazione_lavoro_autonomo": {
+    "max": 1265,
+    "reddito_max": 28000,
+    "reddito_min": 5500
+  },
+  "ateco": [
+    { "label": "Professioni sanitarie, insegnamento, assistenza sociale", "coeff": 0.78 },
+    { "label": "Attività professionali (avvocati, architetti, consulenti art. 54)", "coeff": 0.78 },
+    { "label": "Costruzioni e attività immobiliari", "coeff": 0.86 },
+    { "label": "Intermediari del commercio", "coeff": 0.62 },
+    { "label": "Servizi non professionali, attività sportive", "coeff": 0.67 },
+    { "label": "Industria, artigianato, altri servizi", "coeff": 0.40 },
+    { "label": "Commercio al dettaglio / ambulante / ristorazione", "coeff": 0.40 }
+  ]
+}
