@@ -8,14 +8,14 @@ pub fn get_patrimonio(state: State<AppState>) -> AppResult<PatrimonioStats> {
     let saldo_contanti: f64 = conn.query_row(
         "SELECT COALESCE(SUM(CASE WHEN type='income' THEN amount ELSE -amount END), 0)
               + COALESCE((SELECT SUM(amount) FROM balance_adjustments WHERE metodo='contanti'), 0)
-         FROM transactions WHERE metodo='contanti' AND source != 'goal'",
+         FROM transactions WHERE metodo='contanti'",
         [],
         |r| r.get(0),
     )?;
     let saldo_carta: f64 = conn.query_row(
         "SELECT COALESCE(SUM(CASE WHEN type='income' THEN amount ELSE -amount END), 0)
               + COALESCE((SELECT SUM(amount) FROM balance_adjustments WHERE metodo='carta'), 0)
-         FROM transactions WHERE metodo='carta' AND source != 'goal'",
+         FROM transactions WHERE metodo='carta'",
         [],
         |r| r.get(0),
     )?;
