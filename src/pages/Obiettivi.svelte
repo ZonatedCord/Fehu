@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { PiggyBank, Plus, Trash2, Pencil, Check, X } from '@lucide/svelte';
+  import { PiggyBank, Plus, Trash2, Pencil, Check, X, History } from '@lucide/svelte';
   import { api } from '../lib/api';
-  import type { Goal } from '../lib/types';
+  import type { Goal, Transaction } from '../lib/types';
 
   let goals = $state<Goal[]>([]);
   let error = $state('');
@@ -16,6 +16,8 @@
   let editName = $state('');
   let editTarget = $state(0);
   let editColor = $state('#6366f1');
+  let historyId = $state<number | null>(null);
+  let historyData = $state<Record<number, Transaction[]>>({});
 
   function getMetodo(goalId: number): 'contanti' | 'carta' {
     return goalMetodo[goalId] ?? 'carta';
@@ -66,6 +68,15 @@
       editingId = null;
       await load();
     } catch (e: any) { error = e.message ?? String(e); }
+  }
+
+  async function toggleHistory(id: number) {
+    if (historyId === id) { historyId = null; return; }
+    historyId = id;
+    if (!historyData[id]) {
+      try { historyData = { ...historyData, [id]: await api.listGoalContributions(id) }; }
+      catch (e: any) { error = e.message ?? String(e); }
+    }
   }
 
   async function rimuovi(id: number) {
@@ -129,6 +140,7 @@
           {:else}
             <span class="goal-name">{goal.name}</span>
             <div class="goal-actions">
+              <button class="btn-del" onclick={() => toggleHistory(goal.id)} title="Storico" class:active={historyId === goal.id}><History size={13} /></button>
               <button class="btn-del" onclick={() => startEdit(goal)} title="Modifica"><Pencil size={13} /></button>
               <button class="btn-del" onclick={() => rimuovi(goal.id)} title="Elimina"><Trash2 size={13} /></button>
             </div>
@@ -157,6 +169,23 @@
           <input type="number" placeholder="altro" min="1" step="1"
             onkeydown={(e) => { if (e.key === 'Enter') { aggiungi(goal, +(e.target as HTMLInputElement).value); (e.target as HTMLInputElement).value = ''; } }} />
         </div>
+        {#if historyId === goal.id}
+          <div class="history">
+            {#if !historyData[goal.id]}
+              <p class="history-empty">Caricamento…</p>
+            {:else if historyData[goal.id].length === 0}
+              <p class="history-empty">Nessun versamento ancora.</p>
+            {:else}
+              {#each historyData[goal.id] as tx (tx.id)}
+                <div class="history-row">
+                  <span class="history-date">{tx.date}</span>
+                  <span class="history-metodo">{tx.metodo}</span>
+                  <span class="history-amount" style="color:{goal.color}">+{fmt(tx.amount)}</span>
+                </div>
+              {/each}
+            {/if}
+          </div>
+        {/if}
       </div>
     {/each}
   </div>
@@ -205,4 +234,11 @@
   .metodo-toggle { display: flex; gap: 0.2rem; width: 100%; margin-bottom: 0.3rem; }
   .metodo-btn { flex: 1; background: var(--bg-base); border: 1px solid var(--border); color: var(--text-dim); padding: 0.2rem 0.4rem; border-radius: 4px; cursor: pointer; font-size: 0.72rem; }
   .metodo-btn.active { border-color: var(--c, #6366f1); color: var(--c, #6366f1); }
+  .btn-del.active { color: var(--c, #6366f1); opacity: 1; }
+  .history { border-top: 1px solid var(--border); margin-top: 0.75rem; padding-top: 0.6rem; display: flex; flex-direction: column; gap: 0.3rem; }
+  .history-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; }
+  .history-date { color: var(--text-dim); }
+  .history-metodo { color: var(--text-muted); font-size: 0.72rem; text-transform: capitalize; }
+  .history-amount { font-weight: 600; }
+  .history-empty { color: var(--text-dim); font-size: 0.78rem; margin: 0.25rem 0; }
 </style>
