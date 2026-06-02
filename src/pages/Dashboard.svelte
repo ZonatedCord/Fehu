@@ -3,7 +3,7 @@
   import { get } from 'svelte/store';
   import { Chart, registerables } from 'chart.js';
   import { api } from '../lib/api';
-  import type { BalanceAdjustment, BudgetAlert, DashboardStats, PatrimonioStats } from '../lib/types';
+  import type { BalanceAdjustment, BudgetAlert, DashboardStats, Goal, PatrimonioStats } from '../lib/types';
   import SankeyChart from '../components/SankeyChart.svelte';
   import { Trash2, BarChart3, Banknote, CreditCard } from '@lucide/svelte';
   import { theme } from '../lib/stores';
@@ -27,15 +27,17 @@
   let rettifiche = $state<BalanceAdjustment[]>([]);
   let showRettifiche = $state(false);
   let budgetAlerts = $state<BudgetAlert[]>([]);
+  let goals = $state<Goal[]>([]);
 
   async function load() {
     try {
       const currentMonth = new Date().toISOString().slice(0, 7);
-      [stats, patrimonio, rettifiche, budgetAlerts] = await Promise.all([
+      [stats, patrimonio, rettifiche, budgetAlerts, goals] = await Promise.all([
         api.getDashboardStats(),
         api.getPatrimonio(),
         api.listBalanceAdjustments(),
         api.getBudgetAlerts(currentMonth),
+        api.listGoals(),
       ]);
       await new Promise(r => setTimeout(r, 0));
       renderCharts();
@@ -199,6 +201,30 @@
       <h2>Flusso denaro</h2>
       <SankeyChart {stats} />
     </div>
+
+    {#if goals.length > 0}
+      <div class="chart-card full goals-section">
+        <h2>Fondi risparmio</h2>
+        <div class="goals-grid-dash">
+          {#each goals as g (g.id)}
+            {@const p = Math.min(Math.round((g.saved / g.target) * 100), 100)}
+            <div class="goal-dash">
+              <div class="goal-dash-header">
+                <span class="goal-dash-name">{g.name}</span>
+                <span class="goal-dash-pct" style="color:{g.color}">{p}%</span>
+              </div>
+              <div class="goal-dash-bar">
+                <div class="goal-dash-fill" style="width:{p}%;background:{g.color}"></div>
+              </div>
+              <div class="goal-dash-amounts">
+                <span style="color:{g.color};font-weight:600">{fmt(g.saved)}</span>
+                <span class="goal-dash-sep">/ {fmt(g.target)}</span>
+              </div>
+            </div>
+          {/each}
+        </div>
+      </div>
+    {/if}
   {:else if !error}
     <div class="dash-empty">
       <BarChart3 size={48} class="dash-empty-icon" />
@@ -303,4 +329,14 @@
   .alert-icon { color: var(--expense); font-weight: 700; font-size: 1rem; }
   .alert-text { color: var(--expense); opacity: 0.85; }
   .alert-text strong { color: var(--expense); }
+  .goals-section h2 { margin-bottom: 1rem; }
+  .goals-grid-dash { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+  .goal-dash { background: var(--bg-base); border-radius: 8px; padding: 0.75rem 1rem; border: 1px solid var(--border); }
+  .goal-dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; }
+  .goal-dash-name { font-weight: 600; font-size: 0.88rem; }
+  .goal-dash-pct { font-size: 0.82rem; font-weight: 700; }
+  .goal-dash-bar { background: var(--bg-elevated); border-radius: 4px; height: 6px; margin-bottom: 0.4rem; overflow: hidden; }
+  .goal-dash-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+  .goal-dash-amounts { font-size: 0.82rem; }
+  .goal-dash-sep { color: var(--text-dim); margin-left: 0.2rem; }
 </style>
