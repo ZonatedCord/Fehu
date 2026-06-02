@@ -32,7 +32,7 @@ export const api = {
     invoke<void>('update_goal_saved', { id, saved }),
   deleteGoal: (id: number) => invoke<void>('delete_goal', { id }),
   contributeToGoal: (goalId: number, amount: number, metodo: string, date: string) =>
-    invoke<Goal>('contribute_to_goal', { goal_id: goalId, amount, metodo, date }),
+    invoke<Goal>('contribute_to_goal', { goalId, amount, metodo, date }),
 
   getPatrimonio: () => invoke<PatrimonioStats>('get_patrimonio'),
   listBalanceAdjustments: () => invoke<BalanceAdjustment[]>('list_balance_adjustments'),
@@ -47,9 +47,9 @@ export const api = {
   installDependency: (dep: string) => invoke<{ success: boolean; output: string }>('install_dependency', { dep }),
 
   attachFile: (transactionId: number, sourcePath: string) =>
-    invoke<TransactionFile>('attach_file', { transaction_id: transactionId, source_path: sourcePath }),
+    invoke<TransactionFile>('attach_file', { transactionId, sourcePath }),
   listAttachments: (transactionId: number) =>
-    invoke<TransactionFile[]>('list_attachments', { transaction_id: transactionId }),
+    invoke<TransactionFile[]>('list_attachments', { transactionId }),
   deleteAttachment: (id: number) => invoke<void>('delete_attachment', { id }),
 
   startTelegramBot: (token: string) => invoke<string>('start_telegram_bot', { token }),
