@@ -13,6 +13,9 @@
   let modalOpen = $state(false);
   let editing = $state<RecurringTemplate | null>(null);
   let saving = $state(false);
+  let addingCat = $state(false);
+  let newCatName = $state('');
+  let newCatColor = $state('#6366f1');
 
   const emptyForm = (): RecurringInput => ({
     description: '', amount: 0, type: 'expense', category_id: null,
@@ -53,6 +56,16 @@
       frequency: t.frequency, next_date: t.next_date,
     };
     modalOpen = true;
+  }
+
+  async function createCatInline() {
+    if (!newCatName.trim()) return;
+    try {
+      const cat = await api.createCategory(newCatName.trim(), newCatColor, 'tag');
+      categories = [...categories, cat];
+      form.category_id = cat.id;
+      newCatName = ''; newCatColor = '#6366f1'; addingCat = false;
+    } catch (e: any) { error = e.message ?? String(e); }
   }
 
   async function save() {
@@ -162,12 +175,25 @@
       </label>
     </div>
     <label>Categoria
-      <select bind:value={form.category_id}>
-        <option value={null}>— nessuna —</option>
-        {#each categories as cat (cat.id)}
-          <option value={cat.id}>{cat.name}</option>
-        {/each}
-      </select>
+      <div class="cat-row">
+        <select bind:value={form.category_id}>
+          <option value={null}>— nessuna —</option>
+          {#each categories as cat (cat.id)}
+            <option value={cat.id}>{cat.name}</option>
+          {/each}
+        </select>
+        <button type="button" class="btn-add-cat" onclick={() => { addingCat = !addingCat; }} title="Nuova categoria">
+          <Plus size={13} />
+        </button>
+      </div>
+      {#if addingCat}
+        <div class="inline-cat-form">
+          <input bind:value={newCatName} placeholder="Nome categoria" onkeydown={(e) => e.key === 'Enter' && createCatInline()} />
+          <input type="color" bind:value={newCatColor} class="cat-color-pick" />
+          <button type="button" class="btn-icon-sm ok" onclick={createCatInline} disabled={!newCatName.trim()}>Crea</button>
+          <button type="button" class="btn-icon-sm" onclick={() => addingCat = false}>Annulla</button>
+        </div>
+      {/if}
     </label>
     <label>Metodo
       <select bind:value={form.metodo}>
@@ -218,4 +244,14 @@
   input, select { padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-base); color: var(--text); font-size: 0.9rem; width: 100%; box-sizing: border-box; }
   .form-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem; }
   .form-actions button { padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-muted); }
+  .cat-row { display: flex; gap: 0.4rem; align-items: center; }
+  .cat-row select { flex: 1; }
+  .btn-add-cat { flex-shrink: 0; background: var(--bg-base); border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem 0.5rem; cursor: pointer; color: var(--accent); display: flex; align-items: center; }
+  .btn-add-cat:hover { background: var(--bg-elevated); }
+  .inline-cat-form { display: flex; gap: 0.4rem; align-items: center; margin-top: 0.4rem; flex-wrap: wrap; }
+  .inline-cat-form input[type="text"], .inline-cat-form input:not([type]) { flex: 1; min-width: 120px; padding: 0.35rem 0.5rem; }
+  .cat-color-pick { width: 32px; height: 32px; padding: 0.1rem; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; background: var(--bg-base); flex-shrink: 0; }
+  .btn-icon-sm { padding: 0.3rem 0.6rem; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-base); color: var(--text-muted); cursor: pointer; font-size: 0.8rem; }
+  .btn-icon-sm.ok { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-icon-sm:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>
