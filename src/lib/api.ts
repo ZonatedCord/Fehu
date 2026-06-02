@@ -35,6 +35,8 @@ export const api = {
   deleteGoal: (id: number) => invoke<void>('delete_goal', { id }),
   contributeToGoal: (goalId: number, amount: number, metodo: string, date: string) =>
     invoke<Goal>('contribute_to_goal', { goalId, amount, metodo, date }),
+  listGoalContributions: (goalId: number) =>
+    invoke<Transaction[]>('list_goal_contributions', { goalId }),
 
   getPatrimonio: () => invoke<PatrimonioStats>('get_patrimonio'),
   listBalanceAdjustments: () => invoke<BalanceAdjustment[]>('list_balance_adjustments'),

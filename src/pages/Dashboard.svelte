@@ -199,7 +199,7 @@
     </div>
     <div class="chart-card full">
       <h2>Flusso denaro</h2>
-      <SankeyChart {stats} {goals} />
+      <SankeyChart {stats} />
     </div>
 
     {#if goals.length > 0}

@@ -1,4 +1,4 @@
-use crate::{error::{AppError, AppResult}, models::Goal, AppState};
+use crate::{error::{AppError, AppResult}, models::{Goal, Transaction}, AppState};
 use rusqlite::params;
 use tauri::State;
 
@@ -99,6 +99,25 @@ pub fn contribute_to_goal(
             saved: r.get(3)?, color: r.get(4)?, icon: r.get(5)?, created_at: r.get(6)?,
         }),
     )?)
+}
+
+#[tauri::command]
+pub fn list_goal_contributions(state: State<AppState>, goal_id: i64) -> AppResult<Vec<Transaction>> {
+    let conn = state.db.0.lock().unwrap();
+    let goal_name: String = conn.query_row(
+        "SELECT name FROM goals WHERE id=?1", params![goal_id], |r| r.get(0),
+    ).map_err(|_| AppError::NotFound)?;
+    let desc = format!("Versamento: {}", goal_name);
+    let mut stmt = conn.prepare(
+        "SELECT t.id, t.amount, t.type, t.category_id, c.name,
+                t.date, t.description, t.notes, t.source, t.metodo, t.currency, t.created_at,
+                0 AS attachment_count
+         FROM transactions t LEFT JOIN categories c ON c.id=t.category_id
+         WHERE t.source='goal' AND t.description=?1
+         ORDER BY t.date DESC, t.id DESC",
+    )?;
+    let rows = stmt.query_map(params![desc], Transaction::from_row)?;
+    Ok(rows.collect::<rusqlite::Result<_>>()?)
 }
 
 #[cfg(test)]
