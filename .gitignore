@@ -12,3 +12,5 @@ sidecar/.venv/
 *.db
 *.db-shm
 *.db-wal
+src-tauri/icons/icon_new.png
+src-tauri/icons/icon_source.png

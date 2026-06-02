@@ -43,13 +43,13 @@ Fehu is a desktop app for tracking personal finances — income, expenses, savin
 | **Transactions** | Table and calendar views, inline category creation, file attachments, cash / card badges, multi-currency |
 | **Recurring** | Templates that auto-insert at the scheduled date — daily, weekly, monthly, yearly |
 | **Categories** | Icon + color picker, optional monthly budget cap with dashboard alert |
-| **Goals** | Savings funds with progress bars — topping up creates a linked expense transaction |
+| **Goals** | Savings funds with progress bars — contributions create linked transactions, reduce saldo, appear in all charts. Per-goal history view. Dashboard overview card. |
 
 ### Power features
 | | |
 |---|---|
 | **OCR receipts** | Drag-drop an image → Tesseract 5 extracts amount, date, merchant → local LLM categorizes automatically |
-| **P.IVA calculator** | Italian freelance tax: Forfettario / Ordinario / Semplificato, INPS variants, ±20% projections |
+| **P.IVA calculator** | Italian freelance tax: Forfettario / Ordinario / Semplificato, INPS variants, ±20% projections. Rates auto-fetched from GitHub (2026 INPS + IRPEF). |
 | **Telegram bot** | Add expenses and receipts from Telegram; desktop notifications via local bot |
 | **Import / Export** | Import from *Registro Lavoro* XLSX, export filtered CSV and XLSX |
 | **Backup & Restore** | One-click full SQLite database export and restore |
