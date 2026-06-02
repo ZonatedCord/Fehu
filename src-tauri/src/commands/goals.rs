@@ -62,14 +62,30 @@ pub fn contribute_to_goal(
 ) -> AppResult<Goal> {
     if amount <= 0.0 { return Err(AppError::Validation("Importo deve essere positivo".into())); }
     let conn = state.db.0.lock().unwrap();
-    let goal_name: String = conn.query_row(
-        "SELECT name FROM goals WHERE id=?1", params![goal_id],
-        |r| r.get(0),
+    let (goal_name, goal_color): (String, String) = conn.query_row(
+        "SELECT name, color FROM goals WHERE id=?1", params![goal_id],
+        |r| Ok((r.get(0)?, r.get(1)?)),
     ).map_err(|_| AppError::NotFound)?;
+
+    // Find or create a category matching the goal name
+    let cat_id: i64 = match conn.query_row(
+        "SELECT id FROM categories WHERE name=?1", params![goal_name],
+        |r| r.get(0),
+    ) {
+        Ok(id) => id,
+        Err(_) => {
+            conn.execute(
+                "INSERT INTO categories (name, color, icon) VALUES (?1, ?2, 'piggy-bank')",
+                params![goal_name, goal_color],
+            )?;
+            conn.last_insert_rowid()
+        }
+    };
+
     conn.execute(
-        "INSERT INTO transactions (amount,type,date,description,notes,source,metodo)
-         VALUES (?1,'expense',?2,?3,'','manual',?4)",
-        params![amount, date, format!("Versamento: {}", goal_name), metodo],
+        "INSERT INTO transactions (amount,type,date,description,notes,source,metodo,category_id)
+         VALUES (?1,'expense',?2,?3,'','manual',?4,?5)",
+        params![amount, date, format!("Versamento: {}", goal_name), metodo, cat_id],
     )?;
     conn.execute(
         "UPDATE goals SET saved = MIN(saved + ?1, target) WHERE id=?2",
