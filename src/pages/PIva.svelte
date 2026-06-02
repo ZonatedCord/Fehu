@@ -286,9 +286,9 @@
       </div>
       <div class="fonti-ufficiali">
         <span>Fonti ufficiali:</span>
-        <button class="btn-fonte" onclick={() => openUrl('https://www.inps.it/it/it/dettaglio-scheda.contribuzione-e-aliquote.inps-gestione-artigiani-e-commercianti.html')}>INPS Artigiani/Commercianti</button>
-        <button class="btn-fonte" onclick={() => openUrl('https://www.inps.it/it/it/dettaglio-scheda.schede-informative.gestione-separata-inps.html')}>INPS Gestione Separata</button>
-        <button class="btn-fonte" onclick={() => openUrl('https://www.agenziaentrate.gov.it/portale/web/guest/schede/dichiarazioni/irpef-informazioni')}>Agenzia Entrate IRPEF</button>
+        <button class="btn-fonte" onclick={() => openUrl('https://www.inps.it/it/it/inps-comunica/notizie/dettaglio-news-page.news.2026.02.gestioni-artigiani-e-commercianti-i-contributi-per-il-2026.html')}>INPS Artigiani/Commercianti</button>
+        <button class="btn-fonte" onclick={() => openUrl('https://www.inps.it/it/it/inps-comunica/notizie/dettaglio-news-page.news.2026.02.gestione-separata-le-aliquote-contributive-per-il-2026.html')}>INPS Gestione Separata</button>
+        <button class="btn-fonte" onclick={() => openUrl('https://www.agenziaentrate.gov.it/portale/imposta-sul-reddito-delle-persone-fisiche-irpef-/aliquote-e-calcolo-dell-irpef')}>Agenzia Entrate IRPEF</button>
       </div>
     </div>
   {/if}
