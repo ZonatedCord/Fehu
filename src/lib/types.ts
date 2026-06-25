@@ -115,6 +115,7 @@ export interface AppSettings {
   currency_symbol: string;
   onboarded: string;
   theme: string;
+  telegram_token?: string;
 }
 
 export interface DepsStatus {

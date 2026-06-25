@@ -44,15 +44,68 @@ class FotoStates(StatesGroup):
     waiting_confirm = State()
 
 
+class AggiungiStates(StatesGroup):
+    waiting_category = State()
+    waiting_metodo   = State()
+    waiting_note     = State()
+    waiting_confirm  = State()
+
+
 def fmt_eur(amount: float) -> str:
     return f"{amount:,.2f} €".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
 def confirm_keyboard(amount: float, description: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[[
-        InlineKeyboardButton(text="✅ Salva", callback_data="foto_ok"),
-        InlineKeyboardButton(text="❌ Annulla", callback_data="foto_no"),
+        InlineKeyboardButton(text="Salva", callback_data="foto_ok"),
+        InlineKeyboardButton(text="Annulla", callback_data="foto_no"),
     ]])
+
+
+def categories_keyboard(cats: list[dict]) -> InlineKeyboardMarkup:
+    rows = []
+    row = []
+    for i, cat in enumerate(cats):
+        row.append(InlineKeyboardButton(text=cat["name"], callback_data=f"aggiungi_cat_{cat['id']}"))
+        if len(row) == 3:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def metodo_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text="Contanti", callback_data="aggiungi_metodo_contanti"),
+        InlineKeyboardButton(text="Carta",    callback_data="aggiungi_metodo_carta"),
+    ]])
+
+
+def note_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text="Salta", callback_data="aggiungi_note_skip"),
+    ]])
+
+
+def confirm_aggiungi_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text="Salva",   callback_data="aggiungi_ok"),
+        InlineKeyboardButton(text="Annulla", callback_data="aggiungi_no"),
+    ]])
+
+
+def build_summary(data: dict) -> str:
+    label = "Entrata" if data["tx_type"] == "income" else "Spesa"
+    note_str = data.get("notes") or "—"
+    return (
+        f"*Riepilogo*\n\n"
+        f"Importo: `{fmt_eur(data['amount'])}` ({label})\n"
+        f"Descrizione: {data['description']}\n"
+        f"Categoria: {data.get('category_name', '—')}\n"
+        f"Metodo: {data.get('metodo', '—').capitalize()}\n"
+        f"Note: {note_str}"
+    )
 
 
 async def get_patrimonio() -> dict:
@@ -142,17 +195,26 @@ async def get_categories_with_totals() -> list[dict]:
     return [{"name": r[0], "budget": r[1], "spent": r[2]} for r in rows]
 
 
+async def get_categories() -> list[dict]:
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute("SELECT id, name FROM categories ORDER BY name") as cur:
+            rows = await cur.fetchall()
+    return [{"id": r[0], "name": r[1]} for r in rows]
+
+
 async def add_transaction(amount: float, description: str, tx_type: str = "expense",
-                          metodo: str = "carta", tx_date: str | None = None) -> None:
+                          metodo: str = "carta", tx_date: str | None = None,
+                          category_id: int | None = None, notes: str = "") -> None:
     today = tx_date or date.today().isoformat()
     async with aiosqlite.connect(DB_PATH) as db:
-        async with db.execute("SELECT id FROM categories WHERE name='Altro' LIMIT 1") as cur:
-            row = await cur.fetchone()
-            cat_id = row[0] if row else None
+        if category_id is None:
+            async with db.execute("SELECT id FROM categories WHERE name='Altro' LIMIT 1") as cur:
+                row = await cur.fetchone()
+                category_id = row[0] if row else None
         await db.execute(
             "INSERT INTO transactions (amount,type,category_id,date,description,notes,source,metodo,currency)"
-            " VALUES (?, ?, ?, ?, ?, '', 'telegram', ?, 'EUR')",
-            (amount, tx_type, cat_id, today, description, metodo),
+            " VALUES (?, ?, ?, ?, ?, ?, 'telegram', ?, 'EUR')",
+            (amount, tx_type, category_id, today, description, notes, metodo),
         )
         label = "entrata" if tx_type == "income" else "spesa"
         await db.execute(
@@ -204,8 +266,8 @@ async def cmd_start(message: Message):
         "• `/saldo` — patrimonio attuale\n"
         "• `/spese [N]` — ultime N transazioni\n"
         "• `/spese @categoria` — filtra per categoria\n"
-        "• `/aggiungi <importo> <descrizione>` — aggiungi spesa\n"
-        "• `/aggiungi +<importo> <descrizione>` — aggiungi entrata\n"
+        "• `/aggiungi <importo> <descrizione>` — aggiungi spesa (form guidato)\n"
+        "• `/aggiungi +<importo> <descrizione>` — aggiungi entrata (form guidato)\n"
         "• `/report [mese]` — report mensile\n"
         "• `/obiettivi` — fondi risparmio\n"
         "• `/categorie` — categorie con spese del mese\n"
@@ -283,7 +345,7 @@ async def cmd_report(message: Message):
         await message.answer(f"Errore: {e}")
 
 
-async def cmd_aggiungi(message: Message):
+async def cmd_aggiungi(message: Message, state: FSMContext):
     parts = (message.text or "").split(maxsplit=2)
     if len(parts) < 3:
         await message.answer(
@@ -301,13 +363,99 @@ async def cmd_aggiungi(message: Message):
     except ValueError:
         await message.answer("Importo non valido.")
         return
+
     try:
-        await add_transaction(amount, description, tx_type)
-        icon = "💰" if tx_type == "income" else "✅"
-        label = "Entrata" if tx_type == "income" else "Spesa"
-        await message.answer(f"{icon} *{label}*: `{fmt_eur(amount)}` — {description}", parse_mode="Markdown")
+        cats = await get_categories()
     except Exception as e:
-        await message.answer(f"Errore salvataggio: {e}")
+        await message.answer(f"Errore categorie: {e}")
+        return
+
+    await state.set_state(AggiungiStates.waiting_category)
+    await state.update_data(amount=amount, description=description, tx_type=tx_type)
+
+    label = "Entrata" if tx_type == "income" else "Spesa"
+    await message.answer(
+        f"*{label}*: `{fmt_eur(amount)}` — {description}\n\nScegli categoria:",
+        parse_mode="Markdown",
+        reply_markup=categories_keyboard(cats),
+    )
+
+
+async def callback_aggiungi_cat(query: CallbackQuery, state: FSMContext):
+    await query.answer()
+    cat_id = int(query.data.split("_", 2)[2])
+    cats = await get_categories()
+    cat_name = next((c["name"] for c in cats if c["id"] == cat_id), "—")
+    await state.update_data(category_id=cat_id, category_name=cat_name)
+    await state.set_state(AggiungiStates.waiting_metodo)
+    await query.message.edit_text(
+        f"Categoria: *{cat_name}*\n\nMetodo di pagamento:",
+        parse_mode="Markdown",
+        reply_markup=metodo_keyboard(),
+    )
+
+
+async def callback_aggiungi_metodo(query: CallbackQuery, state: FSMContext):
+    await query.answer()
+    metodo = query.data.split("_", 2)[2]  # "contanti" or "carta"
+    await state.update_data(metodo=metodo)
+    await state.set_state(AggiungiStates.waiting_note)
+    await query.message.edit_text(
+        f"Metodo: *{metodo.capitalize()}*\n\nNote aggiuntive? Digita o salta:",
+        parse_mode="Markdown",
+        reply_markup=note_keyboard(),
+    )
+
+
+async def handle_aggiungi_note(message: Message, state: FSMContext):
+    await state.update_data(notes=message.text)
+    await state.set_state(AggiungiStates.waiting_confirm)
+    data = await state.get_data()
+    await message.answer(
+        build_summary(data),
+        parse_mode="Markdown",
+        reply_markup=confirm_aggiungi_keyboard(),
+    )
+
+
+async def callback_aggiungi_note_skip(query: CallbackQuery, state: FSMContext):
+    await query.answer()
+    await state.update_data(notes="")
+    await state.set_state(AggiungiStates.waiting_confirm)
+    data = await state.get_data()
+    await query.message.edit_text(
+        build_summary(data),
+        parse_mode="Markdown",
+        reply_markup=confirm_aggiungi_keyboard(),
+    )
+
+
+async def callback_aggiungi_ok(query: CallbackQuery, state: FSMContext):
+    await query.answer()
+    data = await state.get_data()
+    try:
+        await add_transaction(
+            amount=data["amount"],
+            description=data["description"],
+            tx_type=data["tx_type"],
+            metodo=data.get("metodo", "carta"),
+            category_id=data.get("category_id"),
+            notes=data.get("notes", ""),
+        )
+        label = "Entrata" if data["tx_type"] == "income" else "Spesa"
+        await query.message.edit_text(
+            f"*{label} salvata*: `{fmt_eur(data['amount'])}` — {data['description']}",
+            parse_mode="Markdown",
+        )
+    except Exception as e:
+        await query.message.edit_text(f"Errore salvataggio: {e}")
+    await state.clear()
+
+
+async def callback_aggiungi_no(query: CallbackQuery, state: FSMContext):
+    await query.answer()
+    await query.message.edit_text("Annullato.")
+    await state.clear()
 
 
 async def cmd_obiettivi(message: Message):
@@ -409,7 +557,7 @@ async def callback_foto(query: CallbackQuery, state: FSMContext):
         try:
             await add_transaction(data["amount"], data["description"])
             await query.message.edit_text(
-                f"✅ Salvato: *{fmt_eur(data['amount'])}* — {data['description']}",
+                f"Salvato: *{fmt_eur(data['amount'])}* — {data['description']}",
                 parse_mode="Markdown",
             )
         except Exception as e:
@@ -435,7 +583,16 @@ async def main(token: str, db_path: str):
     dp.message.register(cmd_aggiungi,   Command("aggiungi"))
     dp.message.register(cmd_obiettivi,  Command("obiettivi"))
     dp.message.register(cmd_categorie,  Command("categorie"))
-    dp.callback_query.register(callback_foto, F.data.in_({"foto_ok", "foto_no"}))
+
+    dp.message.register(handle_aggiungi_note, AggiungiStates.waiting_note)
+
+    dp.callback_query.register(callback_foto,               F.data.in_({"foto_ok", "foto_no"}))
+    dp.callback_query.register(callback_aggiungi_cat,       F.data.startswith("aggiungi_cat_"))
+    dp.callback_query.register(callback_aggiungi_metodo,    F.data.startswith("aggiungi_metodo_"))
+    dp.callback_query.register(callback_aggiungi_note_skip, F.data == "aggiungi_note_skip")
+    dp.callback_query.register(callback_aggiungi_ok,        F.data == "aggiungi_ok")
+    dp.callback_query.register(callback_aggiungi_no,        F.data == "aggiungi_no")
+
     dp.message.register(lambda m, s: handle_photo(m, bot, s), F.photo)
 
     logger.info("Fehu bot avviato. DB: %s", db_path)

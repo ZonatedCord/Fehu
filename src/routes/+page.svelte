@@ -28,6 +28,8 @@
       const t = (s as any).theme ?? 'dark';
       theme.set(t);
       document.documentElement.setAttribute('data-theme', t);
+      const token = s.telegram_token;
+      if (token) api.startTelegramBot(token).catch(() => {});
     }).catch(() => { showOnboarding = true; });
 
     function onKey(e: KeyboardEvent) {
