@@ -85,12 +85,6 @@ jobs:
           prerelease: false
           args: ${{ matrix.args }}
 
-      - name: Upload .sig files to release
-        shell: bash
-        run: find src-tauri/target -name "*.sig" | while read f; do gh release upload ${{ github.ref_name }} "$f" --clobber; done
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   create-update-manifest:
     needs: build
     runs-on: ubuntu-latest
@@ -98,22 +92,53 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download signatures
+      - name: Install minisign
+        run: sudo apt-get install -y minisign
+
+      - name: Download artifacts, sign, and generate latest.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.ref_name }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
-          mkdir -p /tmp/sigs
-          gh release download "$TAG" --repo ZonatedCord/Fehu --pattern "*.sig" --dir /tmp/sigs/ 2>/dev/null || true
+          VERSION="${TAG#v}"
+          mkdir -p /tmp/artifacts /tmp/sigs
+
+          gh release download "$TAG" --repo ZonatedCord/Fehu \
+            --pattern "Fehu_aarch64.app.tar.gz" \
+            --pattern "Fehu_x64.app.tar.gz" \
+            --dir /tmp/artifacts/ 2>/dev/null || true
+
+          WIN_EXE="Fehu_${VERSION}_x64-setup.exe"
+          gh release download "$TAG" --repo ZonatedCord/Fehu \
+            --pattern "$WIN_EXE" \
+            --dir /tmp/artifacts/ 2>/dev/null || true
+
+          echo "Downloaded artifacts:"
+          ls /tmp/artifacts/
+
+          # Write private key to file
+          printf '%s' "$TAURI_SIGNING_PRIVATE_KEY" > /tmp/fehu.key
+          chmod 600 /tmp/fehu.key
+
+          # Sign each artifact
+          for artifact in \
+            /tmp/artifacts/Fehu_aarch64.app.tar.gz \
+            /tmp/artifacts/Fehu_x64.app.tar.gz \
+            /tmp/artifacts/"$WIN_EXE"; do
+            [ -f "$artifact" ] || continue
+            base=$(basename "$artifact")
+            printf '%s\n' "${TAURI_SIGNING_PRIVATE_KEY_PASSWORD}" | \
+              minisign -S -s /tmp/fehu.key \
+                -m "$artifact" \
+                -x "/tmp/sigs/${base}.sig" \
+              && echo "Signed: $base"
+          done
+
+          echo "Signatures:"
           ls /tmp/sigs/
 
-      - name: Generate latest.json
-        env:
-          TAG: ${{ github.ref_name }}
-        run: python3 .github/scripts/gen_latest_json.py /tmp/sigs
-
-      - name: Upload latest.json
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ github.ref_name }}
-        run: gh release upload "$TAG" /tmp/latest.json --repo ZonatedCord/Fehu --clobber
+          python3 .github/scripts/gen_latest_json.py /tmp/sigs
+          cat /tmp/latest.json
+          gh release upload "$TAG" /tmp/latest.json --repo ZonatedCord/Fehu --clobber
