@@ -92,8 +92,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install minisign
-        run: sudo apt-get install -y minisign
+      - name: Install Tauri CLI
+        run: npm install -g @tauri-apps/cli@2
 
       - name: Download artifacts, sign, and generate latest.json
         env:
@@ -115,25 +115,18 @@ jobs:
             --pattern "$WIN_EXE" \
             --dir /tmp/artifacts/ 2>/dev/null || true
 
-          echo "Downloaded artifacts:"
+          echo "Downloaded:"
           ls /tmp/artifacts/
 
-          # Write private key to file
-          printf '%s' "$TAURI_SIGNING_PRIVATE_KEY" > /tmp/fehu.key
-          chmod 600 /tmp/fehu.key
-
-          # Sign each artifact
+          # Sign with Tauri CLI — reads TAURI_SIGNING_PRIVATE_KEY from env automatically
           for artifact in \
             /tmp/artifacts/Fehu_aarch64.app.tar.gz \
             /tmp/artifacts/Fehu_x64.app.tar.gz \
             /tmp/artifacts/"$WIN_EXE"; do
             [ -f "$artifact" ] || continue
             base=$(basename "$artifact")
-            printf '%s\n' "${TAURI_SIGNING_PRIVATE_KEY_PASSWORD}" | \
-              minisign -S -s /tmp/fehu.key \
-                -m "$artifact" \
-                -x "/tmp/sigs/${base}.sig" \
-              && echo "Signed: $base"
+            tauri signer sign "$artifact" && echo "Signed: $base"
+            [ -f "${artifact}.sig" ] && cp "${artifact}.sig" "/tmp/sigs/${base}.sig"
           done
 
           echo "Signatures:"
