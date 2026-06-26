@@ -78,21 +78,29 @@ pub fn start_telegram_bot(
         Ok(_) => {}
     }
 
-    // Kill tracked process + any zombie fehu_bot.py processes from previous sessions
+    // Kill tracked process + any zombie fehu_bot.py processes from previous sessions.
+    // Use SIGTERM first so aiogram can close the Telegram polling session cleanly,
+    // then SIGKILL after a delay to ensure stragglers are gone.
     {
         let mut guard = state.bot.lock().unwrap();
-        if let Some(mut child) = guard.take() {
-            let _ = child.kill();
+        if let Some(child) = guard.as_mut() {
+            // Send SIGTERM via pkill below; just remove from tracking
+            let _ = child;
         }
+        *guard = None;
     }
     #[cfg(any(target_os = "macos", target_os = "linux"))]
-    let _ = std::process::Command::new("pkill").args(["-9", "-f", "fehu_bot.py"]).output();
+    {
+        let _ = std::process::Command::new("pkill").args(["-f", "fehu_bot.py"]).output(); // SIGTERM
+        std::thread::sleep(std::time::Duration::from_millis(1500));
+        let _ = std::process::Command::new("pkill").args(["-9", "-f", "fehu_bot.py"]).output(); // SIGKILL stragglers
+    }
     #[cfg(target_os = "windows")]
     let _ = std::process::Command::new("wmic")
         .args(["process", "where", "commandline like '%fehu_bot.py%'", "call", "terminate"])
         .output();
-    // Small delay so killed processes release the Telegram polling session
-    std::thread::sleep(std::time::Duration::from_millis(300));
+    // Give Telegram API time to release the polling session
+    std::thread::sleep(std::time::Duration::from_millis(500));
 
     // Spawn Python bot using venv interpreter
     let child = std::process::Command::new(&python)
