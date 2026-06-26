@@ -329,15 +329,16 @@
         />
       </label>
       <div class="bot-row">
+        <span class="bot-dot" class:on={botRunning}></span>
+        <span class="bot-status" class:on={botRunning}>{botRunning ? 'In esecuzione' : 'Fermo'}</span>
         <button
           class="btn-bot"
           class:running={botRunning}
           onclick={toggleBot}
           disabled={botBusy}
         >
-          {botBusy ? '…' : botRunning ? 'Ferma bot' : 'Avvia bot'}
+          {botBusy ? '…' : botRunning ? 'Ferma' : 'Avvia'}
         </button>
-        <span class="bot-status" class:on={botRunning}>{botRunning ? 'in esecuzione' : 'fermo'}</span>
       </div>
       {#if botMsg}<p class="bot-msg">{botMsg}</p>{/if}
     </section>
@@ -390,12 +391,15 @@
   .btn-ghost:hover { color: #aaa; border-color: #3e3e5e; }
   .error { color: var(--expense); font-size: 0.85rem; margin: 0; white-space: pre-wrap; user-select: text; }
   code { background: var(--bg-elevated); padding: 0.1rem 0.35rem; border-radius: 4px; font-size: 0.8rem; }
-  .bot-row { display: flex; align-items: center; gap: 0.75rem; }
-  .btn-bot { background: color-mix(in srgb, var(--income) 12%, transparent); border: 1px solid color-mix(in srgb, var(--income) 40%, transparent); color: var(--income); padding: 0.5rem 1rem; border-radius: 10px; cursor: pointer; font-size: 0.9rem; }
-  .btn-bot.running { background: color-mix(in srgb, var(--expense) 12%, transparent); border-color: color-mix(in srgb, var(--expense) 40%, transparent); color: var(--expense); }
-  .btn-bot:disabled { opacity: 0.6; cursor: not-allowed; }
-  .bot-status { font-size: 0.78rem; color: var(--text-dim); }
+  .bot-row { display: flex; align-items: center; gap: 0.6rem; }
+  .bot-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-dim); flex-shrink: 0; }
+  .bot-dot.on { background: var(--income); }
+  .bot-status { font-size: 0.82rem; color: var(--text-dim); flex: 1; }
   .bot-status.on { color: var(--income); }
+  .btn-bot { background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text); padding: 0.4rem 0.9rem; border-radius: 8px; cursor: pointer; font-size: 0.85rem; }
+  .btn-bot:hover { border-color: var(--text-dim); }
+  .btn-bot.running { color: var(--expense); border-color: color-mix(in srgb, var(--expense) 40%, transparent); }
+  .btn-bot:disabled { opacity: 0.5; cursor: not-allowed; }
   .bot-msg { color: var(--income); font-size: 0.82rem; margin: 0; }
   .update-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
   .update-info { display: flex; flex-direction: column; gap: 0.3rem; }

@@ -80,19 +80,16 @@ pub fn run() {
             });
 
             // Kill bot process when the window closes
-            let app_handle_close = app.handle().clone();
             if let Some(window) = app.get_webview_window("main") {
-                window.on_window_event(move |event| {
+                window.on_window_event(|event| {
                     if let tauri::WindowEvent::CloseRequested { .. } = event {
-                        let state = app_handle_close.state::<AppState>();
-                        if let Ok(mut guard) = state.bot.lock() {
-                            if let Some(ref mut child) = *guard {
-                                let _ = child.kill();
-                            }
-                        }
                         #[cfg(any(target_os = "macos", target_os = "linux"))]
                         let _ = std::process::Command::new("pkill")
                             .args(["-9", "-f", "fehu_bot.py"])
+                            .output();
+                        #[cfg(target_os = "windows")]
+                        let _ = std::process::Command::new("taskkill")
+                            .args(["/F", "/FI", "COMMANDLINE eq *fehu_bot.py*"])
                             .output();
                     }
                 });
