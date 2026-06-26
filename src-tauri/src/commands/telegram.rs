@@ -102,14 +102,17 @@ pub fn start_telegram_bot(
     // Give Telegram API time to release the polling session
     std::thread::sleep(std::time::Duration::from_millis(500));
 
-    // Spawn Python bot using venv interpreter
-    let child = std::process::Command::new(&python)
-        .arg(&script)
-        .arg("--token")
-        .arg(&token)
-        .arg("--db-path")
-        .arg(db_path.to_str().unwrap_or(""))
-        .spawn()
+    // Spawn Python bot, redirect stdout+stderr to log file
+    let mut cmd = std::process::Command::new(&python);
+    cmd.arg(&script)
+        .arg("--token").arg(&token)
+        .arg("--db-path").arg(db_path.to_str().unwrap_or(""));
+    if let Ok(log) = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/fehu_bot_app.log") {
+        if let Ok(log2) = log.try_clone() {
+            cmd.stdout(log).stderr(log2);
+        }
+    }
+    let child = cmd.spawn()
         .map_err(|e| AppError::Validation(
             format!("Impossibile avviare python: {e}")
         ))?;
