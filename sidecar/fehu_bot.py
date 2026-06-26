@@ -4,6 +4,7 @@ Fehu Telegram Bot
 Requires: pip install aiogram aiosqlite
 Usage: python3 fehu_bot.py --token BOT_TOKEN --db-path /path/to/fehu.db
 """
+from __future__ import annotations
 
 import argparse
 import asyncio
