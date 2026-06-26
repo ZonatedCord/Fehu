@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*.*.*'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -83,3 +84,73 @@ jobs:
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
+
+      - name: Upload .sig files to release
+        shell: bash
+        run: |
+          find src-tauri/target -name "*.sig" | while read f; do
+            echo "Uploading signature: $f"
+            gh release upload ${{ github.ref_name }} "$f" --clobber
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  create-update-manifest:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate and upload latest.json
+        shell: bash
+        run: |
+          TAG=${{ github.ref_name }}
+          VERSION=${TAG#v}
+          REPO="ZonatedCord/Fehu"
+          BASE_URL="https://github.com/${REPO}/releases/download/${TAG}"
+
+          mkdir -p /tmp/sigs
+          gh release download "${TAG}" --repo "${REPO}" --pattern "*.sig" --dir /tmp/sigs/ 2>/dev/null || true
+          echo "Downloaded signatures:"
+          ls /tmp/sigs/ || echo "(none)"
+
+          python3 - <<PYEOF
+import json, glob, os
+from datetime import datetime, timezone
+
+version = "${VERSION}"
+tag = "${TAG}"
+base = "${BASE_URL}"
+
+def read_sig(*patterns):
+    for p in patterns:
+        files = glob.glob(f"/tmp/sigs/{p}")
+        if files:
+            return open(files[0]).read().strip()
+    return ""
+
+manifest = {
+    "version": version,
+    "notes": "",
+    "pub_date": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+    "platforms": {
+        "darwin-aarch64": {
+            "signature": read_sig("Fehu_aarch64.app.tar.gz.sig"),
+            "url": f"{base}/Fehu_aarch64.app.tar.gz"
+        },
+        "darwin-x86_64": {
+            "signature": read_sig("Fehu_x64.app.tar.gz.sig"),
+            "url": f"{base}/Fehu_x64.app.tar.gz"
+        },
+        "windows-x86_64": {
+            "signature": read_sig("*.nsis.zip.sig", "*-setup.exe.sig", "*.msi.zip.sig"),
+            "url": f"{base}/Fehu_{version}_x64-setup.exe"
+        }
+    }
+}
+
+print(json.dumps(manifest, indent=2))
+json.dump(manifest, open("/tmp/latest.json", "w"), indent=2)
+PYEOF
+
+          gh release upload "${TAG}" /tmp/latest.json --repo "${REPO}" --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
