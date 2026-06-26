@@ -57,9 +57,9 @@ pub fn start_telegram_bot(
         std::path::PathBuf::from("python3")
     };
 
-    // Verify Python dependencies before spawning
+    // Verify Python dependencies before spawning (also validates aiogram 3+ FSM API)
     let dep_check = std::process::Command::new(&python)
-        .args(["-c", "import aiogram, aiosqlite"])
+        .args(["-c", "import aiogram, aiosqlite; from aiogram.fsm.context import FSMContext"])
         .output();
     match dep_check {
         Ok(out) if !out.status.success() => {
@@ -78,13 +78,21 @@ pub fn start_telegram_bot(
         Ok(_) => {}
     }
 
-    // Stop existing instance
+    // Kill tracked process + any zombie fehu_bot.py processes from previous sessions
     {
         let mut guard = state.bot.lock().unwrap();
         if let Some(mut child) = guard.take() {
             let _ = child.kill();
         }
     }
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    let _ = std::process::Command::new("pkill").args(["-9", "-f", "fehu_bot.py"]).output();
+    #[cfg(target_os = "windows")]
+    let _ = std::process::Command::new("wmic")
+        .args(["process", "where", "commandline like '%fehu_bot.py%'", "call", "terminate"])
+        .output();
+    // Small delay so killed processes release the Telegram polling session
+    std::thread::sleep(std::time::Duration::from_millis(300));
 
     // Spawn Python bot using venv interpreter
     let child = std::process::Command::new(&python)

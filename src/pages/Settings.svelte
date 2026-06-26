@@ -45,6 +45,10 @@
       botToken = (s as any).telegram_token ?? '';
       currentVersion = ver;
       depsStatus = await api.checkDependencies();
+      // Re-check after auto-start may still be in progress on first open
+      setTimeout(async () => {
+        botRunning = await api.getTelegramStatus();
+      }, 1500);
     } catch (e: any) {
       error = e.message ?? String(e);
     }

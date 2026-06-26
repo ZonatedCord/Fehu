@@ -79,6 +79,25 @@ pub fn run() {
                 bot: std::sync::Mutex::new(None),
             });
 
+            // Kill bot process when the window closes
+            let app_handle_close = app.handle().clone();
+            if let Some(window) = app.get_webview_window("main") {
+                window.on_window_event(move |event| {
+                    if let tauri::WindowEvent::CloseRequested { .. } = event {
+                        let state = app_handle_close.state::<AppState>();
+                        if let Ok(mut guard) = state.bot.lock() {
+                            if let Some(ref mut child) = *guard {
+                                let _ = child.kill();
+                            }
+                        }
+                        #[cfg(any(target_os = "macos", target_os = "linux"))]
+                        let _ = std::process::Command::new("pkill")
+                            .args(["-9", "-f", "fehu_bot.py"])
+                            .output();
+                    }
+                });
+            }
+
             // Background thread: poll bot_notifications every 3s and show native notifications
             let app_handle = app.handle().clone();
             std::thread::spawn(move || {
