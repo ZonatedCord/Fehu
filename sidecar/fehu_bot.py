@@ -95,13 +95,15 @@ def confirm_aggiungi_keyboard() -> InlineKeyboardMarkup:
     ]])
 
 
+_SESSIONE_SCADUTA = "Sessione scaduta. Riprendi con /aggiungi."
+
 def build_summary(data: dict) -> str:
-    label = "Entrata" if data["tx_type"] == "income" else "Spesa"
+    label = "Entrata" if data.get("tx_type", "expense") == "income" else "Spesa"
     note_str = data.get("notes") or "—"
     return (
         f"*Riepilogo*\n\n"
-        f"Importo: `{fmt_eur(data['amount'])}` ({label})\n"
-        f"Descrizione: {data['description']}\n"
+        f"Importo: `{fmt_eur(data.get('amount', 0))}` ({label})\n"
+        f"Descrizione: {data.get('description', '—')}\n"
         f"Categoria: {data.get('category_name', '—')}\n"
         f"Metodo: {data.get('metodo', '—').capitalize()}\n"
         f"Note: {note_str}"
@@ -381,7 +383,19 @@ async def cmd_aggiungi(message: Message, state: FSMContext):
     )
 
 
+async def _expired(query: CallbackQuery, state: FSMContext) -> bool:
+    """Return True and notify if FSM state is stale (bot was restarted)."""
+    data = await state.get_data()
+    if not data.get("amount"):
+        await query.answer()
+        await query.message.edit_text(_SESSIONE_SCADUTA)
+        await state.clear()
+        return True
+    return False
+
+
 async def callback_aggiungi_cat(query: CallbackQuery, state: FSMContext):
+    if await _expired(query, state): return
     await query.answer()
     cat_id = int(query.data.split("_", 2)[2])
     cats = await get_categories()
@@ -396,6 +410,7 @@ async def callback_aggiungi_cat(query: CallbackQuery, state: FSMContext):
 
 
 async def callback_aggiungi_metodo(query: CallbackQuery, state: FSMContext):
+    if await _expired(query, state): return
     await query.answer()
     metodo = query.data.split("_", 2)[2]  # "contanti" or "carta"
     await state.update_data(metodo=metodo)
@@ -408,6 +423,11 @@ async def callback_aggiungi_metodo(query: CallbackQuery, state: FSMContext):
 
 
 async def handle_aggiungi_note(message: Message, state: FSMContext):
+    data = await state.get_data()
+    if not data.get("amount"):
+        await message.answer(_SESSIONE_SCADUTA)
+        await state.clear()
+        return
     await state.update_data(notes=message.text)
     await state.set_state(AggiungiStates.waiting_confirm)
     data = await state.get_data()
@@ -419,6 +439,7 @@ async def handle_aggiungi_note(message: Message, state: FSMContext):
 
 
 async def callback_aggiungi_note_skip(query: CallbackQuery, state: FSMContext):
+    if await _expired(query, state): return
     await query.answer()
     await state.update_data(notes="")
     await state.set_state(AggiungiStates.waiting_confirm)
@@ -431,18 +452,19 @@ async def callback_aggiungi_note_skip(query: CallbackQuery, state: FSMContext):
 
 
 async def callback_aggiungi_ok(query: CallbackQuery, state: FSMContext):
+    if await _expired(query, state): return
     await query.answer()
     data = await state.get_data()
     try:
         await add_transaction(
             amount=data["amount"],
             description=data["description"],
-            tx_type=data["tx_type"],
+            tx_type=data.get("tx_type", "expense"),
             metodo=data.get("metodo", "carta"),
             category_id=data.get("category_id"),
             notes=data.get("notes", ""),
         )
-        label = "Entrata" if data["tx_type"] == "income" else "Spesa"
+        label = "Entrata" if data.get("tx_type", "expense") == "income" else "Spesa"
         await query.message.edit_text(
             f"*{label} salvata*: `{fmt_eur(data['amount'])}` — {data['description']}",
             parse_mode="Markdown",
