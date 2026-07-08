@@ -79,7 +79,8 @@ src-tauri/src/
     files.rs                 # attach/list/delete_attachment + cascade disk delete
     backup.rs                # export_database (WAL checkpoint), restore_database (integrity_check + swap)
     recurring.rs             # CRUD + toggle + check_and_insert_recurring
-    telegram.rs              # start/stop/status — usa sidecar/.venv/bin/python3 se disponibile
+    telegram.rs              # start/stop/status — usa sidecar/.venv/bin/python3 se disponibile,
+                             # fallback path assoluti (/opt/homebrew/bin, /usr/local/bin, /usr/bin)
 ```
 
 ---
@@ -116,7 +117,12 @@ Persistenza: letto da settings in onMount di +page.svelte.
 ## Telegram Bot
 
 Venv: `sidecar/.venv/bin/python3` — aiogram 3.28, aiosqlite installati.
-Rust: usa venv python se esiste, fallback a `python3` di sistema.
+Rust: usa venv python se esiste, altrimenti prova path assoluti
+(`/opt/homebrew/bin/python3`, `/usr/local/bin/python3`, `/usr/bin/python3`), fallback bare `python3`.
+
+**Perché non bare `python3`:** app installata (.app) lanciata da Finder/Dock non eredita
+il PATH della shell (`launchctl getenv PATH` è vuoto) — Homebrew python3 non trovato,
+bot falliva in silenzio (errore prima di aprire il log file). Fix in v0.2.10.
 Token: salvato in settings table (key `telegram_token`) — auto-saved al click "Avvia bot".
 Comandi: `/start`, `/report [mese]`, `/foto` (aiogram FSM: download→OCR→confirm→INSERT).
 Notifiche: bot scrive in `bot_notifications` → thread Rust→ notifica nativa OS ogni 3s.
@@ -186,3 +192,4 @@ start_telegram_bot, stop_telegram_bot, get_telegram_status
 | 2026-05-31 | Fix: bot path (CARGO_MANIFEST_DIR), CSS vars complete (--bg-elevated), layout centrato, token persistence, theme toggle nav item, Python venv aiogram installato |
 | 2026-06-01 | Release v0.1.0 su GitHub (ZonatedCord/Fehu). CI 3 piattaforme (aarch64 ✅ Windows ✅ Intel ✅). Icona runa Fehu indigo. |
 | 2026-06-02 | UI overhaul light theme: floating card layout, sidebar chiara, contrasti migliorati. Auto-update UX (startup popup, badge sidebar, settings section). Native macOS menu bar (Fehu/File/Modifica/Visualizza) con Cmd+1-7, E, N, F, e copy-paste nativi. Guide AI-assisted per Ollama e Telegram in Settings. Badge metodo → icone Lucide Banknote/CreditCard. Leggenda badge transazioni. QA checklist in docs/. README italiano "Perché esiste". |
+| 2026-07-08 | Fix bot Telegram: app installata (.app) non partiva, nessun errore in log. Root cause: `Command::new("python3")` senza venv risolveva via PATH ereditato dal processo GUI, ma `launchctl getenv PATH` vuoto su macOS → Homebrew python3 (`/opt/homebrew/bin`) irraggiungibile, errore "Python non trovato" prima di scrivere il log. Fix: fallback a path assoluti hardcoded invece di bare `python3`. Rilasciato v0.2.10 (bump necessario — stesso tag non notifica update a chi ha già v0.2.9). |
