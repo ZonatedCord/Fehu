@@ -54,7 +54,11 @@ pub fn start_telegram_bot(
     let python = if venv_python.exists() {
         venv_python
     } else {
-        std::path::PathBuf::from("python3")
+        ["/opt/homebrew/bin/python3", "/usr/local/bin/python3", "/usr/bin/python3"]
+            .into_iter()
+            .map(std::path::PathBuf::from)
+            .find(|p| p.exists())
+            .unwrap_or_else(|| std::path::PathBuf::from("python3"))
     };
 
     // Verify Python dependencies before spawning (also validates aiogram 3+ FSM API)
