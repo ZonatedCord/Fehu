@@ -219,7 +219,8 @@ pub fn run() {
                     }
                 }
             }
-            // Dock icon click while hidden-to-tray should reopen the window.
+            // Dock icon click while hidden-to-tray should reopen the window (macOS-only event).
+            #[cfg(target_os = "macos")]
             tauri::RunEvent::Reopen { has_visible_windows, .. } => {
                 if !has_visible_windows {
                     show_and_focus_main_window(app_handle);
