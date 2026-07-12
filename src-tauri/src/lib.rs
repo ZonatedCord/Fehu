@@ -6,10 +6,26 @@ mod models;
 use db::Db;
 use tauri::{Emitter, Manager};
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
+use tauri::tray::TrayIconBuilder;
 
 pub struct AppState {
     pub db: Db,
     pub bot: std::sync::Mutex<Option<std::process::Child>>,
+    pub is_quitting: std::sync::atomic::AtomicBool,
+}
+
+fn show_and_focus_main_window(app: &tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+}
+
+fn quit_app(app: &tauri::AppHandle) {
+    let state = app.state::<AppState>();
+    state.is_quitting.store(true, std::sync::atomic::Ordering::SeqCst);
+    commands::telegram::kill_bot_processes();
+    app.exit(0);
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -29,7 +45,7 @@ pub fn run() {
                 &PredefinedMenuItem::hide(app, Some("Nascondi Fehu"))?,
                 &PredefinedMenuItem::hide_others(app, Some("Nascondi altre"))?,
                 &PredefinedMenuItem::separator(app)?,
-                &PredefinedMenuItem::quit(app, Some("Esci da Fehu"))?,
+                &MenuItem::with_id(app, "app-quit", "Esci da Fehu", true, Some("CmdOrCtrl+Q"))?,
             ])?;
             let file_menu = Submenu::with_items(app, "File", true, &[
                 &MenuItem::with_id(app, "new-transaction", "Nuova transazione", true, Some("CmdOrCtrl+N"))?,
@@ -63,8 +79,26 @@ pub fn run() {
             let menu = Menu::with_items(app, &[&fehu_menu, &file_menu, &edit_menu, &view_menu, &help_menu])?;
             app.set_menu(menu)?;
             app.on_menu_event(|app, event| {
-                let _ = app.emit("menu-action", event.id().as_ref());
+                match event.id().as_ref() {
+                    "tray-show" => show_and_focus_main_window(app),
+                    "tray-quit" | "app-quit" => quit_app(app),
+                    other => {
+                        let _ = app.emit("menu-action", other);
+                    }
+                }
             });
+
+            // Menu-bar tray icon: keeps app + bot alive when the window is closed
+            let tray_menu = Menu::with_items(app, &[
+                &MenuItem::with_id(app, "tray-show", "Apri Fehu", true, None::<&str>)?,
+                &PredefinedMenuItem::separator(app)?,
+                &MenuItem::with_id(app, "tray-quit", "Esci", true, None::<&str>)?,
+            ])?;
+            TrayIconBuilder::with_id("main-tray")
+                .icon(app.default_window_icon().unwrap().clone())
+                .menu(&tray_menu)
+                .tooltip("Fehu")
+                .build(app)?;
 
             let db_path = app
                 .path()
@@ -77,20 +111,23 @@ pub fn run() {
             app.manage(AppState {
                 db: Db(std::sync::Mutex::new(conn)),
                 bot: std::sync::Mutex::new(None),
+                is_quitting: std::sync::atomic::AtomicBool::new(false),
             });
 
-            // Kill bot process when the window closes
+            // Closing the window hides it instead of quitting; app + bot keep
+            // running via the tray icon. Real quit (tray "Esci" / Cmd+Q) sets
+            // is_quitting first, so this lets that close proceed normally.
             if let Some(window) = app.get_webview_window("main") {
-                window.on_window_event(|event| {
-                    if let tauri::WindowEvent::CloseRequested { .. } = event {
-                        #[cfg(any(target_os = "macos", target_os = "linux"))]
-                        let _ = std::process::Command::new("pkill")
-                            .args(["-9", "-f", "fehu_bot.py"])
-                            .output();
-                        #[cfg(target_os = "windows")]
-                        let _ = std::process::Command::new("taskkill")
-                            .args(["/F", "/FI", "COMMANDLINE eq *fehu_bot.py*"])
-                            .output();
+                let app_handle = app.handle().clone();
+                window.on_window_event(move |event| {
+                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                        let state = app_handle.state::<AppState>();
+                        if !state.is_quitting.load(std::sync::atomic::Ordering::SeqCst) {
+                            api.prevent_close();
+                            if let Some(w) = app_handle.get_webview_window("main") {
+                                let _ = w.hide();
+                            }
+                        }
                     }
                 });
             }
@@ -167,6 +204,27 @@ pub fn run() {
             commands::telegram::stop_telegram_bot,
             commands::telegram::get_telegram_status,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app_handle, event| match event {
+            // Safety net for OS-level quit paths that bypass the window/menu
+            // (e.g. Dock -> Quit, session logout): still hide-to-tray unless
+            // a real quit already set is_quitting.
+            tauri::RunEvent::ExitRequested { api, .. } => {
+                let state = app_handle.state::<AppState>();
+                if !state.is_quitting.load(std::sync::atomic::Ordering::SeqCst) {
+                    api.prevent_exit();
+                    if let Some(w) = app_handle.get_webview_window("main") {
+                        let _ = w.hide();
+                    }
+                }
+            }
+            // Dock icon click while hidden-to-tray should reopen the window.
+            tauri::RunEvent::Reopen { has_visible_windows, .. } => {
+                if !has_visible_windows {
+                    show_and_focus_main_window(app_handle);
+                }
+            }
+            _ => {}
+        });
 }
