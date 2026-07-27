@@ -20,7 +20,7 @@
 
   let showRettifica = $state(false);
   let rettMetodo = $state<'contanti' | 'carta'>('contanti');
-  let rettAmount = $state(0);
+  let rettAmount = $state<number | null>(0);
   let rettNote = $state('');
   let rettDate = $state(new Date().toISOString().slice(0, 10));
   let rettSaving = $state(false);
@@ -96,7 +96,7 @@
   }
 
   async function salvaRettifica() {
-    if (rettAmount === 0) return;
+    if (!rettAmount) return;
     rettSaving = true;
     try {
       await api.createBalanceAdjustment(rettMetodo, rettAmount, rettNote, rettDate);
@@ -262,7 +262,7 @@
         </label>
       </div>
       <div class="modal-footer">
-        <button class="btn-primary" onclick={salvaRettifica} disabled={rettSaving || rettAmount === 0}>
+        <button class="btn-primary" onclick={salvaRettifica} disabled={rettSaving || !rettAmount}>
           {rettSaving ? '…' : 'Salva'}
         </button>
         <button class="btn-ghost" onclick={() => showRettifica = false}>Annulla</button>
